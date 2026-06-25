@@ -747,7 +747,7 @@ function showSyncStatus(msg, isError) {
 }
 
 function cloudSave() {
-  if (!GAS_URL) { alert('GAS_URLが設定されていません。\nsetup_guide.txt の手順に従って設定してください。'); return; }
+  if (!GAS_URL) { alert('☁️ 同期 ▾ → ⚙️ API URL設定 からGAS URLを設定してください。'); return; }
   showSyncStatus('⏳ 保存中...', false);
   fetch(GAS_URL, {
     method: 'POST', mode: 'no-cors',
@@ -762,19 +762,26 @@ function cloudSave() {
 }
 
 function cloudLoad() {
-  if (!GAS_URL) { alert('GAS_URLが設定されていません。\nsetup_guide.txt の手順に従って設定してください。'); return; }
+  if (!GAS_URL) { alert('☁️ 同期 ▾ → ⚙️ API URL設定 からGAS URLを設定してください。'); return; }
   showSyncStatus('⏳ 読込中...', false);
-  fetch(GAS_URL)
-    .then(r => r.json())
-    .then(cloudData => {
-      data = cloudData;
-      saveData();
-      render();
-      showSyncStatus('✅ 読込完了', false);
-    }).catch(err => {
-      showSyncStatus('❌ 読込失敗', true);
-      console.error(err);
-    });
+  const cbName = '_gasCallback_' + Date.now();
+  window[cbName] = function(cloudData) {
+    data = cloudData;
+    saveData();
+    render();
+    showSyncStatus('✅ 読込完了', false);
+    delete window[cbName];
+    document.getElementById(cbName).remove();
+  };
+  const script = document.createElement('script');
+  script.id = cbName;
+  script.src = GAS_URL + '?callback=' + cbName;
+  script.onerror = function() {
+    showSyncStatus('❌ 読込失敗', true);
+    delete window[cbName];
+    script.remove();
+  };
+  document.body.appendChild(script);
 }
 
 function toggleAutoSync() {
