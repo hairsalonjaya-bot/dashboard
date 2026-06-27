@@ -4,15 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理ダッシュボード</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="管理DB">
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
 body { font-family: 'Noto Sans JP', sans-serif; }
 .tabular { font-variant-numeric: tabular-nums; }
-input[type="number"] { -moz-appearance: textfield; }
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
@@ -21,7 +20,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 
   <header class="flex flex-wrap items-center justify-between gap-4 mb-4">
     <h1 class="text-xl font-bold flex items-center gap-2">
-      <span class="text-2xl">📊</span> <span id="headerTitle">利益管理ダッシュボード</span>
+      <span class="text-2xl">📊</span> <span id="headerTitle">管理ダッシュボード</span>
     </h1>
     <div class="flex items-center gap-3">
       <select id="yearSelect" class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm"></select>
@@ -30,32 +29,12 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
         <span id="monthLabel" class="text-sm font-medium min-w-[3rem] text-center"></span>
         <button onclick="changeMonth(1)" class="w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition">▶</button>
       </div>
-      <div class="relative">
-        <button onclick="document.getElementById('ioMenu').classList.toggle('hidden')" class="h-8 px-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm">📁 データ ▾</button>
-        <div id="ioMenu" class="hidden absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
-          <button onclick="exportJSON();closeIO()" class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition">📤 JSONエクスポート</button>
-          <button onclick="exportCSV();closeIO()" class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition border-t border-gray-100 dark:border-gray-700">📤 CSVエクスポート</button>
-          <button onclick="document.getElementById('importJSON').click();closeIO()" class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition border-t border-gray-100 dark:border-gray-700">📥 JSONインポート</button>
-          <button onclick="document.getElementById('importCSV').click();closeIO()" class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition border-t border-gray-100 dark:border-gray-700">📥 CSVインポート</button>
-          <button onclick="if(confirm('全データを削除しますか？')){data={};saveData();render();}closeIO()" class="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition border-t border-gray-100 dark:border-gray-700">🗑️ データリセット</button>
-        </div>
-        <input type="file" id="importJSON" accept=".json" class="hidden" onchange="handleImportJSON(this)">
-        <input type="file" id="importCSV" accept=".csv" class="hidden" onchange="handleImportCSV(this)">
-      </div>
-      <div class="relative">
-        <button onclick="document.getElementById('syncMenu').classList.toggle('hidden')" id="syncBtn" class="h-8 px-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm">☁️ 同期 ▾</button>
-        <div id="syncMenu" class="hidden absolute right-0 mt-1 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
-          <button onclick="cloudSave();closeSyncMenu()" class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition">📤 クラウドに保存</button>
-          <button onclick="cloudLoad();closeSyncMenu()" class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition border-t border-gray-100 dark:border-gray-700">📥 クラウドから読込</button>
-          <button onclick="toggleAutoSync();closeSyncMenu()" id="autoSyncBtn" class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition border-t border-gray-100 dark:border-gray-700">🔄 自動同期ON</button>
-          <button onclick="setupGasUrl();closeSyncMenu()" class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition border-t border-gray-100 dark:border-gray-700">⚙️ API URL設定</button>
-        </div>
-      </div>
+      <button onclick="loadFromCloud()" id="syncBtn" class="h-8 px-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm">🔄 読込</button>
+      <button onclick="setupGasUrl()" class="h-8 px-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm">⚙️</button>
       <button onclick="toggleDark()" class="w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm">🌓</button>
     </div>
   </header>
 
-  <!-- Mode switcher -->
   <div class="flex gap-1 mb-4">
     <button onclick="switchMode('biz')" id="modeBtn_biz" class="mode-btn px-5 py-2 rounded-lg text-sm font-bold transition">💼 事業管理</button>
     <button onclick="switchMode('life')" id="modeBtn_life" class="mode-btn px-5 py-2 rounded-lg text-sm font-bold transition">🏠 生活管理</button>
@@ -63,181 +42,187 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
   </div>
 
   <div id="kpiCards" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
-
   <div id="tabBar" class="flex gap-1 mb-4 overflow-x-auto"></div>
-
   <div id="mainContent"></div>
 
+  <div id="loadingOverlay" class="fixed inset-0 bg-black/30 flex items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 text-center shadow-lg">
+      <div class="text-2xl mb-2">⏳</div>
+      <div class="text-sm">データ読み込み中...</div>
+    </div>
+  </div>
 </div>
 
 <script>
 const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
-const BIZ_CATEGORIES = {
-  fixed: { label: '固定費', color: '#EF9F27', items: ['給与（特別費込み）','専従者給与','住宅ローン','事業ローン','社会保険料','セーフティ共済'] },
-  variable: { label: '変動費', color: '#3266ad', items: ['仕入高','水道光熱費','支払手数料','消耗品費','車両費','通信費','リース料','研修費','雑費','接待交際費','損害保険料','新聞図書費'] },
-  other: { label: 'その他経費', color: '#1D9E75', items: ['グルーニー年会費','保証協会年支払い','消費税等','諸会費','広告宣伝費','旅費交通費','HPB','修繕費'] },
-  biz: { label: '事業経費', color: '#7F77DD', items: ['事業経費'] }
-};
-const BIZ_SALES_ITEMS = ['売上高', 'family'];
+// Biz categories mapping from spreadsheet
+const BIZ_CAT_MAP = { '売上':'sales', '固定費':'fixed', '変動費':'variable', 'その他経費':'other', '事業経費':'biz' };
+const BIZ_CAT_COLORS = { fixed:'#EF9F27', variable:'#3266ad', other:'#1D9E75', biz:'#7F77DD', sales:'#D85A30' };
+const BIZ_CAT_LABELS = { fixed:'固定費', variable:'変動費', other:'その他経費', biz:'事業経費' };
 
-const LIFE_EXPENSE_CATS = {
-  monthly_fixed: { label: '毎月固定費', color: '#EF9F27', items: ['サブスク','習い事','習い事【子供】','水道光熱費','保険料','通信費'] },
-  monthly_var: { label: '毎月変動費', color: '#3266ad', items: ['食費','日用品','被服費','美容費','医療費','交通費','かおり食費','かおり日用品'] },
-  irreg_fixed: { label: '不定期固定費', color: '#D85A30', items: ['税金【家、車】','年会費','教育費','特別費'] },
-  irreg_var: { label: '不定期変動費', color: '#7F77DD', items: ['家電・家具','車両代','旅行','冠婚葬祭','卒業・入学','病気治療費'] }
-};
-const LIFE_INCOME_ITEMS = {
-  budget: { label: '予算内', color: '#1D9E75', items: ['月収','売電','副業(FANZA)'] },
-  extra: { label: '予算外', color: '#534AB7', items: ['臨時収入','残業','賞与'] }
-};
-const LIFE_INVEST_CATS = {
-  invest: { label: '投資', color: '#1D9E75', items: ['NISA','セーフティ共済','児童手当','特別費（預金）'] },
-  saving: { label: '貯金', color: '#3266ad', items: ['貯金'] }
-};
+// Life categories mapping
+const LIFE_EXP_CATS = { '毎月固定費':'monthly_fixed', '毎月変動費':'monthly_var', '不定期固定費':'irreg_fixed', '不定期変動費':'irreg_var' };
+const LIFE_INC_CATS = { '収入:予算内':'budget', '収入:予算外':'extra' };
+const LIFE_INV_CATS = { '投資':'invest', '貯金':'saving' };
+const LIFE_EXP_COLORS = { monthly_fixed:'#EF9F27', monthly_var:'#3266ad', irreg_fixed:'#D85A30', irreg_var:'#7F77DD' };
+const LIFE_EXP_LABELS = { monthly_fixed:'毎月固定費', monthly_var:'毎月変動費', irreg_fixed:'不定期固定費', irreg_var:'不定期変動費' };
 
+const SPECIAL_TAGS = ['自分のお金で支払ったもの','旅行','特別費','教育','医療','冠婚葬祭','家電・家具','その他'];
+
+let GAS_URL = localStorage.getItem('gas_url') || '';
 let state = { year: 2026, month: 0, tab: 'overview', mode: 'biz' };
-let data = {};
+let rawData = { biz: [], life: [], special: [] };
 let charts = {};
-
-function storageKey() { return 'profit_dashboard_v2'; }
-function loadData() { try { data = JSON.parse(localStorage.getItem(storageKey())) || {}; } catch(e) { data = {}; } }
-function saveData() { localStorage.setItem(storageKey(), JSON.stringify(data)); }
-
-function getVal(year, mi, cat, item) { return data[`${year}_${mi}_${cat}_${item}`] || 0; }
-function setVal(year, mi, cat, item, val) { data[`${year}_${mi}_${cat}_${item}`] = val; saveData(); }
 
 function fmt(v) { return '¥' + Math.round(v).toLocaleString(); }
 function fmtPct(v) { return (v * 100).toFixed(1) + '%'; }
 function fmtMan(v) { return '¥' + Math.round(v / 10000) + '万'; }
+function monthIdx(mStr) { return MONTHS.indexOf(mStr); }
+function chartColors() { const d=document.documentElement.classList.contains('dark'); return {grid:d?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',tick:d?'#9ca3af':'#6b7280'}; }
+function destroyCharts() { Object.values(charts).forEach(c=>c.destroy()); charts={}; }
+function makeChart(id, cfg) { if(charts[id]) charts[id].destroy(); const c=new Chart(document.getElementById(id),cfg); charts[id]=c; return c; }
 
-function getCatTotal(cats, year, mi, catKey) { return cats[catKey].items.reduce((s, item) => s + getVal(year, mi, catKey, item), 0); }
-function sum12(fn) { return Array.from({length:12}, (_,i) => fn(i)).reduce((a,b)=>a+b,0); }
-
-// === BIZ helpers ===
-function bizExpenseTotal(y, m) { return ['fixed','variable','other','biz'].reduce((s, c) => s + getCatTotal(BIZ_CATEGORIES, y, m, c), 0); }
-function bizSales(y, m) { return BIZ_SALES_ITEMS.reduce((s, item) => s + getVal(y, m, 'sales', item), 0); }
-function bizProfit(y, m) { return bizSales(y, m) - bizExpenseTotal(y, m); }
-
-// === LIFE helpers ===
-function lifeExpenseTotal(y, m) { return Object.keys(LIFE_EXPENSE_CATS).reduce((s, c) => s + getCatTotal(LIFE_EXPENSE_CATS, y, m, c), 0); }
-function lifeIncomeTotal(y, m) { return Object.keys(LIFE_INCOME_ITEMS).reduce((s, c) => s + getCatTotal(LIFE_INCOME_ITEMS, y, m, c), 0); }
-function lifeInvestTotal(y, m) { return Object.keys(LIFE_INVEST_CATS).reduce((s, c) => s + getCatTotal(LIFE_INVEST_CATS, y, m, c), 0); }
-function lifeBalance(y, m) { return lifeIncomeTotal(y, m) - lifeExpenseTotal(y, m) - lifeInvestTotal(y, m); }
-
-function changeMonth(d) { state.month = (state.month + d + 12) % 12; render(); }
-function toggleDark() { document.documentElement.classList.toggle('dark'); destroyCharts(); render(); }
-function switchTab(tab) { state.tab = tab; render(); }
-function switchMode(mode) { state.mode = mode; state.tab = 'overview'; destroyCharts(); render(); }
-function destroyCharts() { Object.values(charts).forEach(c => c.destroy()); charts = {}; }
-
-function delta(cur, prev, invert) {
-  if (prev === 0) return '<span class="text-gray-400 text-xs">—</span>';
-  const pct = ((cur - prev) / Math.abs(prev) * 100).toFixed(1);
-  const up = parseFloat(pct) >= 0;
-  const good = invert ? !up : up;
-  return `<span class="text-xs ${good ? 'text-emerald-600' : 'text-red-500'}">${up ? '↑' : '↓'} ${Math.abs(pct)}% 前月比</span>`;
-}
-
-function kpiCard(label, value, deltaHtml, colorClass) {
+function kpiCard(label, value, sub, colorClass) {
   return `<div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
     <div class="text-xs text-gray-500 mb-1">${label}</div>
-    <div class="text-xl font-bold tabular ${colorClass || ''}">${value}</div>
-    <div class="mt-1">${deltaHtml}</div>
-  </div>`;
+    <div class="text-xl font-bold tabular ${colorClass||''}">${value}</div>
+    <div class="mt-1">${sub||''}</div></div>`;
 }
 
-function makeChart(canvasId, config) {
-  if (charts[canvasId]) charts[canvasId].destroy();
-  const c = new Chart(document.getElementById(canvasId), config);
-  charts[canvasId] = c;
-  return c;
+function delta(cur, prev, invert) {
+  if(!prev) return '<span class="text-gray-400 text-xs">—</span>';
+  const pct=((cur-prev)/Math.abs(prev)*100).toFixed(1);
+  const up=parseFloat(pct)>=0, good=invert?!up:up;
+  return `<span class="text-xs ${good?'text-emerald-600':'text-red-500'}">${up?'↑':'↓'} ${Math.abs(pct)}% 前月比</span>`;
 }
 
-function chartColors() {
-  const isDark = document.documentElement.classList.contains('dark');
-  return { grid: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', tick: isDark ? '#9ca3af' : '#6b7280' };
+// === DATA HELPERS ===
+function bizByMonth(mi) {
+  return rawData.biz.filter(r => monthIdx(r.month) === mi);
+}
+function bizSales(mi) { return bizByMonth(mi).filter(r=>BIZ_CAT_MAP[r.category]==='sales').reduce((s,r)=>s+r.amount,0); }
+function bizCatTotal(mi, catKey) { return bizByMonth(mi).filter(r=>BIZ_CAT_MAP[r.category]===catKey).reduce((s,r)=>s+r.amount,0); }
+function bizExpense(mi) { return ['fixed','variable','other','biz'].reduce((s,c)=>s+bizCatTotal(mi,c),0); }
+function bizProfit(mi) { return bizSales(mi)-bizExpense(mi); }
+function sum12(fn) { return Array.from({length:12},(_,i)=>fn(i)).reduce((a,b)=>a+b,0); }
+
+function lifeByMonth(mi) { return rawData.life.filter(r=>monthIdx(r.month)===mi); }
+function lifeIncome(mi) { return lifeByMonth(mi).filter(r=>LIFE_INC_CATS[r.category]).reduce((s,r)=>s+r.amount,0); }
+function lifeExpense(mi) { return lifeByMonth(mi).filter(r=>LIFE_EXP_CATS[r.category]).reduce((s,r)=>s+r.amount,0); }
+function lifeInvest(mi) { return lifeByMonth(mi).filter(r=>LIFE_INV_CATS[r.category]).reduce((s,r)=>s+r.amount,0); }
+function lifeExpCatTotal(mi, catKey) { return lifeByMonth(mi).filter(r=>LIFE_EXP_CATS[r.category]===catKey).reduce((s,r)=>s+r.amount,0); }
+function lifeIncCatTotal(mi, catKey) { return lifeByMonth(mi).filter(r=>LIFE_INC_CATS[r.category]===catKey).reduce((s,r)=>s+r.amount,0); }
+function lifeInvCatTotal(mi, catKey) { return lifeByMonth(mi).filter(r=>LIFE_INV_CATS[r.category]===catKey).reduce((s,r)=>s+r.amount,0); }
+
+function itemsForCat(dataArr, mi, catLabel) {
+  const items = {};
+  dataArr.filter(r=>monthIdx(r.month)===mi && r.category===catLabel).forEach(r=>{items[r.item]=(items[r.item]||0)+r.amount;});
+  return items;
+}
+function annualItemsForCat(dataArr, catLabel) {
+  const items = {};
+  dataArr.filter(r=>r.category===catLabel).forEach(r=>{items[r.item]=(items[r.item]||0)+r.amount;});
+  return items;
 }
 
-// ============================
-// RENDER
-// ============================
-function render() {
-  const y = state.year, m = state.month;
-  document.getElementById('monthLabel').textContent = MONTHS[m];
-  document.getElementById('headerTitle').textContent = state.mode === 'biz' ? '利益管理ダッシュボード' : state.mode === 'life' ? '生活費管理ダッシュボード' : '特別費で支払ったもの';
-
-  document.querySelectorAll('.mode-btn').forEach(b => {
-    const id = b.id.replace('modeBtn_', '');
-    const active = id === state.mode;
-    const activeColor = id === 'biz' ? 'bg-blue-600 text-white' : id === 'life' ? 'bg-emerald-600 text-white' : 'bg-amber-600 text-white';
-    const inactiveColor = 'bg-white dark:bg-gray-800 text-gray-500 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700';
-    const colors = active ? activeColor : inactiveColor;
-    b.className = `mode-btn px-5 py-2 rounded-lg text-sm font-bold transition ${colors}`;
-  });
-
-  if (state.mode === 'biz') renderBiz(y, m);
-  else if (state.mode === 'life') renderLife(y, m);
-  else renderSpecial(y);
+// === CLOUD ===
+function setupGasUrl() {
+  const url = prompt('Google Apps Script のURLを入力:', GAS_URL);
+  if (url !== null) { GAS_URL = url.trim(); localStorage.setItem('gas_url', GAS_URL); alert(GAS_URL ? 'URL設定完了' : 'URLクリア'); }
 }
 
-// ============================
-// BIZ MODE
-// ============================
-function renderBiz(y, m) {
-  const tabs = [
-    {id:'overview',label:'概要'},{id:'fixed',label:'固定費'},{id:'variable',label:'変動費'},
-    {id:'other',label:'その他経費'},{id:'annual',label:'年間総合'},{id:'average',label:'月平均'},{id:'input',label:'入力'}
-  ];
-  renderTabBar(tabs);
-
-  const sales = bizSales(y, m), expense = bizExpenseTotal(y, m), profit = bizProfit(y, m);
-  const rate = sales > 0 ? profit / sales : 0;
-  const pm = (m - 1 + 12) % 12, py = m === 0 ? y - 1 : y;
-  const ps = bizSales(py, pm), pe = bizExpenseTotal(py, pm), pp = ps - pe, pr = ps > 0 ? pp / ps : 0;
-
-  document.getElementById('kpiCards').innerHTML =
-    kpiCard('月間売上', fmt(sales), delta(sales, ps, false)) +
-    kpiCard('月間経費', fmt(expense), delta(expense, pe, true)) +
-    kpiCard('営業利益', fmt(profit), delta(profit, pp, false), profit >= 0 ? 'text-emerald-600' : 'text-red-500') +
-    kpiCard('利益率', fmtPct(rate), sales > 0 && ps > 0 ? `<span class="text-xs ${rate >= pr ? 'text-emerald-600' : 'text-red-500'}">${rate >= pr ? '↑' : '↓'} ${Math.abs((rate - pr) * 100).toFixed(1)}pt 前月比</span>` : '<span class="text-gray-400 text-xs">—</span>');
-
-  const mc = document.getElementById('mainContent');
-  if (state.tab === 'overview') mc.innerHTML = bizOverviewHTML(y, m);
-  else if (state.tab === 'annual') mc.innerHTML = bizAnnualHTML(y);
-  else if (state.tab === 'average') mc.innerHTML = bizAverageHTML(y);
-  else if (state.tab === 'input') mc.innerHTML = bizInputHTML(y, m);
-  else mc.innerHTML = bizCategoryHTML(y, state.tab);
-
-  if (state.tab === 'overview') { renderBizTrendChart(y); renderBizPieChart(y, m); }
-  if (state.tab === 'average') renderBizAvgChart(y);
+function loadFromCloud() {
+  if (!GAS_URL) { alert('⚙️ボタンからAPI URLを設定してください'); return; }
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+  document.getElementById('syncBtn').textContent = '⏳ 読込中...';
+  const cb = '_cb_' + Date.now();
+  window[cb] = function(d) {
+    rawData = d;
+    localStorage.setItem('dashboard_cache', JSON.stringify(d));
+    render();
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    document.getElementById('syncBtn').textContent = '✅ 完了';
+    setTimeout(()=>{ document.getElementById('syncBtn').textContent = '🔄 読込'; }, 2000);
+    delete window[cb];
+    document.getElementById(cb).remove();
+  };
+  const s = document.createElement('script');
+  s.id = cb;
+  s.src = GAS_URL + '?callback=' + cb;
+  s.onerror = function() {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    document.getElementById('syncBtn').textContent = '❌ 失敗';
+    setTimeout(()=>{ document.getElementById('syncBtn').textContent = '🔄 読込'; }, 2000);
+    delete window[cb]; s.remove();
+  };
+  document.body.appendChild(s);
 }
+
+// === NAVIGATION ===
+function changeMonth(d) { state.month=(state.month+d+12)%12; render(); }
+function toggleDark() { document.documentElement.classList.toggle('dark'); destroyCharts(); render(); }
+function switchTab(tab) { state.tab=tab; render(); }
+function switchMode(mode) { state.mode=mode; state.tab='overview'; destroyCharts(); render(); }
 
 function renderTabBar(tabs) {
-  document.getElementById('tabBar').innerHTML = tabs.map(t =>
-    `<button onclick="switchTab('${t.id}')" data-tab="${t.id}" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium transition ${t.id === state.tab ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}">${t.label}</button>`
+  document.getElementById('tabBar').innerHTML = tabs.map(t=>
+    `<button onclick="switchTab('${t.id}')" class="tab-btn px-4 py-1.5 rounded-lg text-sm font-medium transition ${t.id===state.tab?'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white':'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}">${t.label}</button>`
   ).join('');
 }
 
-function bizOverviewHTML(y, m) {
-  const pm = (m-1+12)%12, py = m===0?y-1:y;
-  let rows = '';
-  for (const [ck, cat] of Object.entries(BIZ_CATEGORIES)) {
-    cat.items.forEach(item => {
-      const cur = getVal(y,m,ck,item), prev = getVal(py,pm,ck,item), diff = cur-prev;
-      const ann = sum12(i => getVal(y,i,ck,item));
-      rows += `<div class="t-row"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-sm" style="background:${cat.color}"></span>${item}</div><div class="text-right tabular">${fmt(cur)}</div><div class="text-right tabular text-gray-500">${fmt(prev)}</div><div class="text-right tabular ${diff>0?'text-red-500':diff<0?'text-emerald-600':'text-gray-400'}">${diff===0?'—':(diff>0?'+':'')+fmt(diff)}</div><div class="text-right tabular">${fmt(ann)}</div></div>`;
-    });
-    const ct = getCatTotal(BIZ_CATEGORIES,y,m,ck), pt = getCatTotal(BIZ_CATEGORIES,py,pm,ck), dt = ct-pt;
-    const at = sum12(i => getCatTotal(BIZ_CATEGORIES,y,i,ck));
-    rows += `<div class="t-row font-medium bg-gray-50 dark:bg-gray-700/50"><div>${cat.label} 小計</div><div class="text-right tabular">${fmt(ct)}</div><div class="text-right tabular text-gray-500">${fmt(pt)}</div><div class="text-right tabular ${dt>0?'text-red-500':dt<0?'text-emerald-600':'text-gray-400'}">${dt===0?'—':(dt>0?'+':'')+fmt(dt)}</div><div class="text-right tabular">${fmt(at)}</div></div>`;
-  }
+// === RENDER ===
+function render() {
+  const m = state.month;
+  document.getElementById('monthLabel').textContent = MONTHS[m];
+  document.getElementById('headerTitle').textContent = state.mode==='biz'?'利益管理ダッシュボード':state.mode==='life'?'生活費管理ダッシュボード':'特別費で支払ったもの';
 
-  const aS = sum12(i=>bizSales(y,i)), aF = sum12(i=>getCatTotal(BIZ_CATEGORIES,y,i,'fixed'));
-  const aV = sum12(i=>bizExpenseTotal(y,i)) - aF;
-  const vr = aS>0?aV/aS:0, mr2 = 1-vr, bep = mr2>0?aF/mr2:0, sf = aS>0?(aS-bep)/aS:0;
-  const aE = sum12(i=>bizExpenseTotal(y,i)), aP = aS-aE, aR = aS>0?aP/aS:0;
-  const mwd = Array.from({length:12},(_,i)=>bizSales(y,i)>0||bizExpenseTotal(y,i)>0?1:0).reduce((a,b)=>a+b,0);
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    const id=b.id.replace('modeBtn_',''), active=id===state.mode;
+    const ac=id==='biz'?'bg-blue-600 text-white':id==='life'?'bg-emerald-600 text-white':'bg-amber-600 text-white';
+    b.className=`mode-btn px-5 py-2 rounded-lg text-sm font-bold transition ${active?ac:'bg-white dark:bg-gray-800 text-gray-500 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`;
+  });
+
+  if (state.mode==='biz') renderBiz(m);
+  else if (state.mode==='life') renderLife(m);
+  else renderSpecial();
+}
+
+// ======== BIZ ========
+function renderBiz(m) {
+  renderTabBar([{id:'overview',label:'概要'},{id:'annual',label:'年間総合'},{id:'average',label:'月平均'}]);
+  const s=bizSales(m),e=bizExpense(m),p=bizProfit(m),r=s>0?p/s:0;
+  const pm=(m-1+12)%12,ps=bizSales(pm),pe=bizExpense(pm),pp=ps-pe,pr=ps>0?pp/ps:0;
+  document.getElementById('kpiCards').innerHTML =
+    kpiCard('月間売上',fmt(s),delta(s,ps,false))+kpiCard('月間経費',fmt(e),delta(e,pe,true))+
+    kpiCard('営業利益',fmt(p),delta(p,pp,false),p>=0?'text-emerald-600':'text-red-500')+
+    kpiCard('利益率',fmtPct(r),s>0&&ps>0?`<span class="text-xs ${r>=pr?'text-emerald-600':'text-red-500'}">${r>=pr?'↑':'↓'} ${Math.abs((r-pr)*100).toFixed(1)}pt</span>`:'<span class="text-gray-400 text-xs">—</span>');
+
+  const mc=document.getElementById('mainContent');
+  if(state.tab==='overview') { mc.innerHTML=bizOverviewHTML(m); renderBizCharts(m); }
+  else if(state.tab==='annual') mc.innerHTML=bizAnnualHTML();
+  else mc.innerHTML=bizAverageHTML();
+}
+
+function bizOverviewHTML(m) {
+  const pm=(m-1+12)%12;
+  const expCats=['固定費','変動費','その他経費','事業経費'];
+  let rows='';
+  expCats.forEach(catLabel=>{
+    const ck=BIZ_CAT_MAP[catLabel], col=BIZ_CAT_COLORS[ck];
+    const curItems=itemsForCat(rawData.biz,m,catLabel), prevItems=itemsForCat(rawData.biz,pm,catLabel);
+    const allItems=new Set([...Object.keys(curItems),...Object.keys(prevItems)]);
+    allItems.forEach(item=>{
+      const cur=curItems[item]||0,prev=prevItems[item]||0,diff=cur-prev;
+      const ann=annualItemsForCat(rawData.biz,catLabel)[item]||0;
+      rows+=`<div class="t-row"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-sm" style="background:${col}"></span>${item}</div><div class="text-right tabular">${fmt(cur)}</div><div class="text-right tabular text-gray-500">${fmt(prev)}</div><div class="text-right tabular ${diff>0?'text-red-500':diff<0?'text-emerald-600':'text-gray-400'}">${diff===0?'—':(diff>0?'+':'')+fmt(diff)}</div><div class="text-right tabular">${fmt(ann)}</div></div>`;
+    });
+    const ct=bizCatTotal(m,ck),pt=bizCatTotal(pm,ck),dt=ct-pt,at=sum12(i=>bizCatTotal(i,ck));
+    rows+=`<div class="t-row font-medium bg-gray-50 dark:bg-gray-700/50"><div>${catLabel} 小計</div><div class="text-right tabular">${fmt(ct)}</div><div class="text-right tabular text-gray-500">${fmt(pt)}</div><div class="text-right tabular ${dt>0?'text-red-500':dt<0?'text-emerald-600':'text-gray-400'}">${dt===0?'—':(dt>0?'+':'')+fmt(dt)}</div><div class="text-right tabular">${fmt(at)}</div></div>`;
+  });
+
+  const aS=sum12(bizSales),aF=sum12(i=>bizCatTotal(i,'fixed')),aV=sum12(bizExpense)-aF;
+  const vr=aS>0?aV/aS:0,mr=1-vr,bep=mr>0?aF/mr:0,sf=aS>0?(aS-bep)/aS:0;
 
   return `
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
@@ -254,201 +239,103 @@ function bizOverviewHTML(y, m) {
   </div>
   <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
     <div class="text-sm font-medium p-4 pb-2">経費内訳（${MONTHS[m]}）</div>
-    <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] px-4 py-2 text-xs text-gray-500 font-medium border-b border-gray-200 dark:border-gray-700">
-      <div>項目</div><div class="text-right">当月</div><div class="text-right">前月</div><div class="text-right">増減</div><div class="text-right">年間累計</div>
-    </div>
+    <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] px-4 py-2 text-xs text-gray-500 font-medium border-b border-gray-200 dark:border-gray-700"><div>項目</div><div class="text-right">当月</div><div class="text-right">前月</div><div class="text-right">増減</div><div class="text-right">年間累計</div></div>
     <style>.t-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;padding:8px 16px;font-size:13px;border-top:1px solid rgba(0,0,0,0.05)}.t-row:hover{background:rgba(0,0,0,0.02)}</style>
     ${rows}
   </div>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-      <div class="text-sm font-medium mb-3">損益分岐点分析</div>
-      <div class="mb-3"><div class="text-xs text-gray-500">損益分岐点売上高（年間）</div><div class="text-2xl font-bold text-red-500 tabular">${fmt(bep)}</div>
-      <div class="text-xs text-gray-500 mt-1">${aS>bep?`現在の売上は損益分岐点を ${fmt(aS-bep)} 上回っています`:aS>0?`損益分岐点まで ${fmt(bep-aS)} 不足しています`:'データを入力してください'}</div></div>
-      <div class="grid grid-cols-2 gap-3">
-        <div><div class="text-xs text-gray-500">変動費率</div><div class="text-lg font-bold tabular">${fmtPct(vr)}</div></div>
-        <div><div class="text-xs text-gray-500">限界利益率</div><div class="text-lg font-bold tabular">${fmtPct(mr2)}</div></div>
-        <div><div class="text-xs text-gray-500">安全余裕率</div><div class="text-lg font-bold tabular ${sf>=0?'text-emerald-600':'text-red-500'}">${fmtPct(sf)}</div></div>
-      </div>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-      <div class="text-sm font-medium mb-3">年間累計サマリー</div>
-      <div class="grid grid-cols-2 gap-3">
-        <div><div class="text-xs text-gray-500">年間売上</div><div class="text-lg font-bold tabular">${fmt(aS)}</div></div>
-        <div><div class="text-xs text-gray-500">年間経費</div><div class="text-lg font-bold tabular">${fmt(aE)}</div></div>
-        <div><div class="text-xs text-gray-500">年間利益</div><div class="text-lg font-bold tabular ${aP>=0?'text-emerald-600':'text-red-500'}">${fmt(aP)}</div></div>
-        <div><div class="text-xs text-gray-500">年間利益率</div><div class="text-lg font-bold tabular">${fmtPct(aR)}</div></div>
-        <div><div class="text-xs text-gray-500">入力済み月数</div><div class="text-lg font-bold">${mwd} / 12</div></div>
-        <div><div class="text-xs text-gray-500">月平均利益</div><div class="text-lg font-bold tabular">${mwd>0?fmt(aP/mwd):'—'}</div></div>
-      </div>
+  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6">
+    <div class="text-sm font-medium mb-3">損益分岐点分析</div>
+    <div class="mb-3"><div class="text-xs text-gray-500">損益分岐点売上高（年間）</div><div class="text-2xl font-bold text-red-500 tabular">${fmt(bep)}</div>
+    <div class="text-xs text-gray-500 mt-1">${aS>bep?`売上は損益分岐点を ${fmt(aS-bep)} 上回っています`:aS>0?`損益分岐点まで ${fmt(bep-aS)} 不足`:'データなし'}</div></div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div><div class="text-xs text-gray-500">変動費率</div><div class="text-lg font-bold tabular">${fmtPct(vr)}</div></div>
+      <div><div class="text-xs text-gray-500">限界利益率</div><div class="text-lg font-bold tabular">${fmtPct(mr)}</div></div>
+      <div><div class="text-xs text-gray-500">安全余裕率</div><div class="text-lg font-bold tabular ${sf>=0?'text-emerald-600':'text-red-500'}">${fmtPct(sf)}</div></div>
     </div>
   </div>`;
 }
 
-function renderBizTrendChart(y) {
-  const cc = chartColors();
-  const sd = MONTHS.map((_,i) => bizSales(y,i)||null);
-  const ed = MONTHS.map((_,i) => { const e=bizExpenseTotal(y,i); return e>0?e:null; });
-  const pd = MONTHS.map((_,i) => { const s=bizSales(y,i),e=bizExpenseTotal(y,i); return (s>0||e>0)?s-e:null; });
-  makeChart('trendChart', {
-    type:'bar', data:{ labels:MONTHS, datasets:[
-      {label:'売上高',data:sd,backgroundColor:'#3266ad',borderRadius:3,order:2},
-      {label:'経費合計',data:ed,backgroundColor:'#B4B2A9',borderRadius:3,order:3},
-      {label:'営業利益',data:pd,type:'line',borderColor:'#1D9E75',borderWidth:2,pointRadius:4,pointBackgroundColor:'#1D9E75',fill:false,order:1,tension:0.3}
-    ]}, options:{ responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{ x:{ticks:{autoSkip:false,font:{size:11},color:cc.tick},grid:{display:false}}, y:{ticks:{callback:v=>fmtMan(v),font:{size:11},color:cc.tick},grid:{color:cc.grid}} }
-    }
-  });
-  document.getElementById('legendTrend').innerHTML = [['#3266ad','売上高'],['#B4B2A9','経費合計'],['#1D9E75','営業利益']].map(([c,l])=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${c}"></span>${l}</span>`).join('');
+function renderBizCharts(m) {
+  const cc=chartColors();
+  const sd=MONTHS.map((_,i)=>bizSales(i)||null), ed=MONTHS.map((_,i)=>{const e=bizExpense(i);return e>0?e:null;}), pd=MONTHS.map((_,i)=>{const s=bizSales(i),e=bizExpense(i);return(s>0||e>0)?s-e:null;});
+  makeChart('trendChart',{type:'bar',data:{labels:MONTHS,datasets:[{label:'売上',data:sd,backgroundColor:'#3266ad',borderRadius:3,order:2},{label:'経費',data:ed,backgroundColor:'#B4B2A9',borderRadius:3,order:3},{label:'利益',data:pd,type:'line',borderColor:'#1D9E75',borderWidth:2,pointRadius:4,pointBackgroundColor:'#1D9E75',fill:false,order:1,tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:false,font:{size:11},color:cc.tick},grid:{display:false}},y:{ticks:{callback:v=>fmtMan(v),font:{size:11},color:cc.tick},grid:{color:cc.grid}}}}});
+  document.getElementById('legendTrend').innerHTML=[['#3266ad','売上高'],['#B4B2A9','経費合計'],['#1D9E75','営業利益']].map(([c,l])=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${c}"></span>${l}</span>`).join('');
+
+  const vals=['fixed','variable','other','biz'].map(c=>bizCatTotal(m,c));
+  const total=vals.reduce((a,b)=>a+b,0);
+  const colors=['#EF9F27','#3266ad','#1D9E75','#7F77DD'], labels=['固定費','変動費','その他経費','事業経費'];
+  makeChart('pieChart',{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false}}}});
+  document.getElementById('legendPie').innerHTML=labels.map((l,i)=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${colors[i]}"></span>${l} ${total>0?Math.round(vals[i]/total*100):0}%</span>`).join('');
 }
 
-function renderBizPieChart(y, m) {
-  const vals = ['fixed','variable','other','biz'].map(c=>getCatTotal(BIZ_CATEGORIES,y,m,c));
-  const total = vals.reduce((a,b)=>a+b,0);
-  const colors = ['#EF9F27','#3266ad','#1D9E75','#7F77DD'], labels = ['固定費','変動費','その他経費','事業経費'];
-  makeChart('pieChart', {
-    type:'doughnut', data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false}}}
-  });
-  document.getElementById('legendPie').innerHTML = labels.map((l,i)=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${colors[i]}"></span>${l} ${total>0?Math.round(vals[i]/total*100):0}%</span>`).join('');
-}
-
-function bizCategoryHTML(y, catKey) {
-  const cat = BIZ_CATEGORIES[catKey]; if (!cat) return '';
-  let tRows = '';
-  for (const item of cat.items) {
-    let cells = `<td class="py-2 px-3 text-sm font-medium">${item}</td>`;
-    for (let i=0;i<12;i++) { const v=getVal(y,i,catKey,item); cells+=`<td class="py-2 px-3 text-right text-sm tabular ${i===state.month?'bg-blue-50 dark:bg-blue-900/20 font-medium':''}">${fmt(v)}</td>`; }
-    cells+=`<td class="py-2 px-3 text-right text-sm font-medium tabular">${fmt(sum12(i=>getVal(y,i,catKey,item)))}</td>`;
-    tRows+=`<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">${cells}</tr>`;
-  }
-  let stCells = `<td class="py-2 px-3 text-sm font-bold">${cat.label} 合計</td>`;
-  for (let i=0;i<12;i++) { stCells+=`<td class="py-2 px-3 text-right text-sm font-bold tabular ${i===state.month?'bg-blue-50 dark:bg-blue-900/20':''}">${fmt(getCatTotal(BIZ_CATEGORIES,y,i,catKey))}</td>`; }
-  stCells+=`<td class="py-2 px-3 text-right text-sm font-bold tabular">${fmt(sum12(i=>getCatTotal(BIZ_CATEGORIES,y,i,catKey)))}</td>`;
-  let hCells = '<th class="py-2 px-3 text-left text-xs font-medium text-gray-500">項目</th>';
-  MONTHS.forEach((ml,i)=>{ hCells+=`<th class="py-2 px-3 text-right text-xs font-medium ${i===state.month?'text-blue-600 dark:text-blue-400':'text-gray-500'}">${ml}</th>`; });
-  hCells+='<th class="py-2 px-3 text-right text-xs font-medium text-gray-500">年間</th>';
-  return `<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto"><table class="w-full min-w-[800px]"><thead><tr class="bg-gray-50 dark:bg-gray-700/50">${hCells}</tr></thead><tbody>${tRows}<tr class="bg-gray-50 dark:bg-gray-700/50 border-t-2 border-gray-300 dark:border-gray-600">${stCells}</tr></tbody></table></div>`;
-}
-
-function bizAnnualHTML(y) {
-  const aS=sum12(i=>bizSales(y,i)),aE=sum12(i=>bizExpenseTotal(y,i)),aP=aS-aE,aR=aS>0?aP/aS:0;
-  const mwd=Array.from({length:12},(_,i)=>bizSales(y,i)>0||bizExpenseTotal(y,i)>0?1:0).reduce((a,b)=>a+b,0);
-  let sb=''; for(const si of BIZ_SALES_ITEMS){const t=sum12(i=>getVal(y,i,'sales',si));sb+=`<div><div class="text-xs text-gray-500">${si}</div><div class="text-lg font-bold tabular">${fmt(t)}</div></div>`;}
-  let mr=''; MONTHS.forEach((ml,i)=>{const s=bizSales(y,i),e=bizExpenseTotal(y,i),p=s-e,r=s>0?p/s:0;mr+=`<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 ${i===state.month?'bg-blue-50 dark:bg-blue-900/20':''}"><td class="py-2 px-3 text-sm font-medium">${ml}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(s)}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(e)}</td><td class="py-2 px-3 text-right text-sm tabular ${p>=0?'text-emerald-600':'text-red-500'}">${fmt(p)}</td><td class="py-2 px-3 text-right text-sm tabular">${fmtPct(r)}</td></tr>`;});
+function bizAnnualHTML() {
+  const aS=sum12(bizSales),aE=sum12(bizExpense),aP=aS-aE,aR=aS>0?aP/aS:0;
+  let mr='';MONTHS.forEach((ml,i)=>{const s=bizSales(i),e=bizExpense(i),p=s-e,r=s>0?p/s:0;mr+=`<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 ${i===state.month?'bg-blue-50 dark:bg-blue-900/20':''}"><td class="py-2 px-3 text-sm font-medium">${ml}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(s)}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(e)}</td><td class="py-2 px-3 text-right text-sm tabular ${p>=0?'text-emerald-600':'text-red-500'}">${fmt(p)}</td><td class="py-2 px-3 text-right text-sm tabular">${fmtPct(r)}</td></tr>`;});
   mr+=`<tr class="bg-gray-50 dark:bg-gray-700/50 border-t-2 border-gray-300 dark:border-gray-600 font-bold"><td class="py-2 px-3 text-sm">年間合計</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(aS)}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(aE)}</td><td class="py-2 px-3 text-right text-sm tabular ${aP>=0?'text-emerald-600':'text-red-500'}">${fmt(aP)}</td><td class="py-2 px-3 text-right text-sm tabular">${fmtPct(aR)}</td></tr>`;
-  let cr='';for(const[ck,cat]of Object.entries(BIZ_CATEGORIES)){let ct2=0;cat.items.forEach(item=>{const t=sum12(i=>getVal(y,i,ck,item));ct2+=t;cr+=`<tr class="border-t border-gray-100 dark:border-gray-700"><td class="py-2 px-3 text-sm"><span class="inline-block w-2 h-2 rounded-sm mr-2" style="background:${cat.color}"></span>${item}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(t)}</td><td class="py-2 px-3 text-right text-sm tabular">${aE>0?fmtPct(t/aE):'0.0%'}</td></tr>`;});cr+=`<tr class="bg-gray-50 dark:bg-gray-700/50 border-t font-medium"><td class="py-2 px-3 text-sm">${cat.label} 小計</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(ct2)}</td><td class="py-2 px-3 text-right text-sm tabular">${aE>0?fmtPct(ct2/aE):'0.0%'}</td></tr>`;}
-  const aF2=sum12(i=>getCatTotal(BIZ_CATEGORIES,y,i,'fixed')),aV2=aE-aF2,vr2=aS>0?aV2/aS:0,mr3=1-vr2,bep2=mr3>0?aF2/mr3:0,sf2=aS>0?(aS-bep2)/aS:0;
   return `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${kpiCard('年間売上',fmt(aS),'')}${kpiCard('年間経費',fmt(aE),'')}${kpiCard('年間利益',fmt(aP),'',aP>=0?'text-emerald-600':'text-red-500')}${kpiCard('年間利益率',fmtPct(aR),'')}</div>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"><div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"><div class="text-sm font-medium mb-3">売上内訳（年間）</div><div class="grid grid-cols-2 gap-3">${sb}<div><div class="text-xs text-gray-500">合計</div><div class="text-lg font-bold tabular">${fmt(aS)}</div></div><div><div class="text-xs text-gray-500">入力済み月数</div><div class="text-lg font-bold">${mwd} / 12</div></div></div></div>
-  <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"><div class="text-sm font-medium mb-3">損益分岐点分析</div><div class="mb-3"><div class="text-xs text-gray-500">損益分岐点売上高</div><div class="text-2xl font-bold text-red-500 tabular">${fmt(bep2)}</div></div><div class="grid grid-cols-2 gap-3"><div><div class="text-xs text-gray-500">変動費率</div><div class="text-lg font-bold tabular">${fmtPct(vr2)}</div></div><div><div class="text-xs text-gray-500">限界利益率</div><div class="text-lg font-bold tabular">${fmtPct(mr3)}</div></div><div><div class="text-xs text-gray-500">安全余裕率</div><div class="text-lg font-bold tabular ${sf2>=0?'text-emerald-600':'text-red-500'}">${fmtPct(sf2)}</div></div><div><div class="text-xs text-gray-500">月平均利益</div><div class="text-lg font-bold tabular">${mwd>0?fmt(aP/mwd):'—'}</div></div></div></div></div>
-  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto mb-6"><div class="text-sm font-medium p-4 pb-2">月次損益一覧（${y}年）</div><table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">月</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">売上高</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">経費合計</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">営業利益</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">利益率</th></tr></thead><tbody>${mr}</tbody></table></div>
-  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto"><div class="text-sm font-medium p-4 pb-2">経費項目別 年間集計</div><table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">項目</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">年間合計</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">経費構成比</th></tr></thead><tbody>${cr}</tbody></table></div>`;
+  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto"><div class="text-sm font-medium p-4 pb-2">月次損益一覧</div><table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">月</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">売上高</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">経費合計</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">営業利益</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">利益率</th></tr></thead><tbody>${mr}</tbody></table></div>`;
 }
 
-function bizAverageHTML(y) {
-  const mwd=Array.from({length:12},(_,i)=>bizSales(y,i)>0||bizExpenseTotal(y,i)>0?1:0).reduce((a,b)=>a+b,0);
-  const n=mwd||1,aS=sum12(i=>bizSales(y,i))/n,aE2=sum12(i=>bizExpenseTotal(y,i))/n,aP=aS-aE2,aR=aS>0?aP/aS:0;
-  let sah='';for(const si of BIZ_SALES_ITEMS){const t=sum12(i=>getVal(y,i,'sales',si));sah+=`<tr class="border-t border-gray-100 dark:border-gray-700"><td class="py-2 px-3 text-sm"><span class="inline-block w-2 h-2 rounded-sm mr-2" style="background:#D85A30"></span>${si}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(t/n)}</td><td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(t)}</td></tr>`;}
-  sah+=`<tr class="bg-gray-50 dark:bg-gray-700/50 border-t font-medium"><td class="py-2 px-3 text-sm">売上合計</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(aS)}</td><td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(aS*n)}</td></tr>`;
-  let eah='';for(const[ck,cat]of Object.entries(BIZ_CATEGORIES)){let ct=0;cat.items.forEach(item=>{const t=sum12(i=>getVal(y,i,ck,item));ct+=t;eah+=`<tr class="border-t border-gray-100 dark:border-gray-700"><td class="py-2 px-3 text-sm"><span class="inline-block w-2 h-2 rounded-sm mr-2" style="background:${cat.color}"></span>${item}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(t/n)}</td><td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(t)}</td></tr>`;});eah+=`<tr class="bg-gray-50 dark:bg-gray-700/50 border-t font-medium"><td class="py-2 px-3 text-sm">${cat.label} 小計</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(ct/n)}</td><td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(ct)}</td></tr>`;}
-  return `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${kpiCard('月平均売上',fmt(aS),'')}${kpiCard('月平均経費',fmt(aE2),'')}${kpiCard('月平均利益',fmt(aP),'',aP>=0?'text-emerald-600':'text-red-500')}${kpiCard('平均利益率',fmtPct(aR),`<span class="text-xs text-gray-500">対象: ${mwd}ヶ月</span>`)}</div>
-  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6"><div class="text-sm font-medium mb-2">月別利益（平均との比較）</div><div class="relative h-56"><canvas id="avgChart"></canvas></div></div>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"><div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto"><div class="text-sm font-medium p-4 pb-2">売上 月平均内訳</div><table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">項目</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">月平均</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">年間合計</th></tr></thead><tbody>${sah}</tbody></table></div>
-  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto"><div class="text-sm font-medium p-4 pb-2">経費 月平均内訳</div><table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">項目</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">月平均</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">年間合計</th></tr></thead><tbody>${eah}</tbody></table></div></div>`;
+function bizAverageHTML() {
+  const mwd=Array.from({length:12},(_,i)=>bizSales(i)>0||bizExpense(i)>0?1:0).reduce((a,b)=>a+b,0);
+  const n=mwd||1,aS=sum12(bizSales)/n,aE=sum12(bizExpense)/n,aP=aS-aE,aR=aS>0?aP/aS:0;
+  return `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${kpiCard('月平均売上',fmt(aS),'')}${kpiCard('月平均経費',fmt(aE),'')}${kpiCard('月平均利益',fmt(aP),'',aP>=0?'text-emerald-600':'text-red-500')}${kpiCard('平均利益率',fmtPct(aR),`<span class="text-xs text-gray-500">対象: ${mwd}ヶ月</span>`)}</div>`;
 }
 
-function renderBizAvgChart(y) {
-  const cc = chartColors();
-  const mwd=Array.from({length:12},(_,i)=>bizSales(y,i)>0||bizExpenseTotal(y,i)>0?1:0).reduce((a,b)=>a+b,0);
-  const n=mwd||1, avg=sum12(i=>bizProfit(y,i))/n;
-  const pd=Array.from({length:12},(_,i)=>bizProfit(y,i));
-  const bc=pd.map(p=>p>=0?'#1D9E75':'#E24B4A');
-  makeChart('avgChart',{type:'bar',data:{labels:MONTHS,datasets:[{data:pd,backgroundColor:bc,borderRadius:3},{data:Array(12).fill(avg),type:'line',borderColor:'#EF9F27',borderWidth:2,borderDash:[6,3],pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:false,font:{size:11},color:cc.tick},grid:{display:false}},y:{ticks:{callback:v=>fmtMan(v),font:{size:11},color:cc.tick},grid:{color:cc.grid}}}}});
-}
-
-function bizInputHTML(y, m) {
-  let html = `<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"><div class="text-sm font-medium mb-4">${y}年 ${MONTHS[m]} データ入力</div>`;
-  html += `<details class="mb-4" open><summary class="flex items-center gap-2 cursor-pointer text-sm font-medium py-2"><span class="w-3 h-3 rounded-sm" style="background:#D85A30"></span>売上</summary><div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-5 mt-2">`;
-  for (const si of BIZ_SALES_ITEMS) { const v=getVal(y,m,'sales',si); html+=`<div><label class="text-xs text-gray-500 block mb-1">${si}</label><input type="number" value="${v||''}" onchange="setVal(${y},${m},'sales','${si}',Number(this.value));render()" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm tabular" placeholder="0"></div>`; }
-  html += '</div></details>';
-  for (const [ck,cat] of Object.entries(BIZ_CATEGORIES)) {
-    html+=`<details class="mb-3" open><summary class="flex items-center gap-2 cursor-pointer text-sm font-medium py-2"><span class="w-3 h-3 rounded-sm" style="background:${cat.color}"></span>${cat.label}</summary><div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-5 mt-2">`;
-    for(const item of cat.items){const v=getVal(y,m,ck,item);html+=`<div><label class="text-xs text-gray-500 block mb-1">${item}</label><input type="number" value="${v||''}" onchange="setVal(${y},${m},'${ck}','${item}',Number(this.value));render()" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm tabular" placeholder="0"></div>`;}
-    html+='</div></details>';
-  }
-  return html + '</div>';
-}
-
-// ============================
-// LIFE MODE
-// ============================
-function renderLife(y, m) {
-  const tabs = [
-    {id:'overview',label:'概要'},{id:'monthly_fixed',label:'毎月固定費'},{id:'monthly_var',label:'毎月変動費'},
-    {id:'irreg_fixed',label:'不定期固定費'},{id:'irreg_var',label:'不定期変動費'},
-    {id:'annual',label:'年間総合'},{id:'average',label:'月平均'},{id:'input',label:'入力'}
-  ];
-  renderTabBar(tabs);
-
-  const income = lifeIncomeTotal(y, m), expense = lifeExpenseTotal(y, m);
-  const balance = income - expense;
-  const pm = (m-1+12)%12, py2 = m===0?y-1:y;
-  const pi = lifeIncomeTotal(py2,pm), pex = lifeExpenseTotal(py2,pm), pbal = pi-pex;
-
+// ======== LIFE ========
+function renderLife(m) {
+  renderTabBar([{id:'overview',label:'概要'},{id:'annual',label:'年間総合'},{id:'average',label:'月平均'}]);
+  const inc=lifeIncome(m),exp=lifeExpense(m),bal=inc-exp;
+  const pm=(m-1+12)%12,pi=lifeIncome(pm),pe=lifeExpense(pm),pb=pi-pe;
   document.getElementById('kpiCards').innerHTML =
-    kpiCard('月間収入', fmt(income), delta(income, pi, false)) +
-    kpiCard('月間支出', fmt(expense), delta(expense, pex, true)) +
-    kpiCard('収支', fmt(balance), delta(balance, pbal, false), balance >= 0 ? 'text-emerald-600' : 'text-red-500');
+    kpiCard('月間収入',fmt(inc),delta(inc,pi,false))+kpiCard('月間支出',fmt(exp),delta(exp,pe,true))+
+    kpiCard('収支',fmt(bal),delta(bal,pb,false),bal>=0?'text-emerald-600':'text-red-500');
 
-  const mc = document.getElementById('mainContent');
-  if (state.tab === 'overview') { mc.innerHTML = lifeOverviewHTML(y, m); renderLifeTrendChart(y); renderLifePieChart(y, m); }
-  else if (state.tab === 'annual') mc.innerHTML = lifeAnnualHTML(y);
-  else if (state.tab === 'average') { mc.innerHTML = lifeAverageHTML(y); renderLifeAvgChart(y); }
-  else if (state.tab === 'input') mc.innerHTML = lifeInputHTML(y, m);
-  else mc.innerHTML = lifeCategoryHTML(y, state.tab);
+  const mc=document.getElementById('mainContent');
+  if(state.tab==='overview'){mc.innerHTML=lifeOverviewHTML(m);renderLifeCharts(m);}
+  else if(state.tab==='annual') mc.innerHTML=lifeAnnualHTML();
+  else mc.innerHTML=lifeAverageHTML();
 }
 
-function lifeOverviewHTML(y, m) {
-  const pm=(m-1+12)%12, py=m===0?y-1:y;
-  const income=lifeIncomeTotal(y,m), expense=lifeExpenseTotal(y,m);
-  const expRate = income>0 ? expense/income*100 : 0;
-  const target80 = expRate <= 80;
+function lifeOverviewHTML(m) {
+  const pm=(m-1+12)%12;
+  const inc=lifeIncome(m),exp=lifeExpense(m);
+  const expRate=inc>0?exp/inc*100:0,target80=expRate<=80;
 
-  // Expense table
-  let rows = '';
-  for(const[ck,cat]of Object.entries(LIFE_EXPENSE_CATS)){
-    cat.items.forEach(item=>{
-      const cur=getVal(y,m,ck,item),prev=getVal(py,pm,ck,item),diff=cur-prev;
-      const ann=sum12(i=>getVal(y,i,ck,item));
-      rows+=`<div class="t-row"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-sm" style="background:${cat.color}"></span>${item}</div><div class="text-right tabular">${fmt(cur)}</div><div class="text-right tabular text-gray-500">${fmt(prev)}</div><div class="text-right tabular ${diff>0?'text-red-500':diff<0?'text-emerald-600':'text-gray-400'}">${diff===0?'—':(diff>0?'+':'')+fmt(diff)}</div><div class="text-right tabular">${fmt(ann)}</div></div>`;
+  let expRows='';
+  ['毎月固定費','毎月変動費','不定期固定費','不定期変動費'].forEach(catLabel=>{
+    const ck=LIFE_EXP_CATS[catLabel],col=LIFE_EXP_COLORS[ck];
+    const curItems=itemsForCat(rawData.life,m,catLabel),prevItems=itemsForCat(rawData.life,pm,catLabel);
+    new Set([...Object.keys(curItems),...Object.keys(prevItems)]).forEach(item=>{
+      const cur=curItems[item]||0,prev=prevItems[item]||0,diff=cur-prev;
+      const ann=annualItemsForCat(rawData.life,catLabel)[item]||0;
+      expRows+=`<div class="t-row"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-sm" style="background:${col}"></span>${item}</div><div class="text-right tabular">${fmt(cur)}</div><div class="text-right tabular text-gray-500">${fmt(prev)}</div><div class="text-right tabular ${diff>0?'text-red-500':diff<0?'text-emerald-600':'text-gray-400'}">${diff===0?'—':(diff>0?'+':'')+fmt(diff)}</div><div class="text-right tabular">${fmt(ann)}</div></div>`;
     });
-    const ct=getCatTotal(LIFE_EXPENSE_CATS,y,m,ck),pt=getCatTotal(LIFE_EXPENSE_CATS,py,pm,ck),dt=ct-pt;
-    const at=sum12(i=>getCatTotal(LIFE_EXPENSE_CATS,y,i,ck));
-    rows+=`<div class="t-row font-medium bg-gray-50 dark:bg-gray-700/50"><div>${cat.label} 小計</div><div class="text-right tabular">${fmt(ct)}</div><div class="text-right tabular text-gray-500">${fmt(pt)}</div><div class="text-right tabular ${dt>0?'text-red-500':dt<0?'text-emerald-600':'text-gray-400'}">${dt===0?'—':(dt>0?'+':'')+fmt(dt)}</div><div class="text-right tabular">${fmt(at)}</div></div>`;
-  }
+    const ct=lifeExpCatTotal(m,ck),pt=lifeExpCatTotal(pm,ck),dt=ct-pt,at=sum12(i=>lifeExpCatTotal(i,ck));
+    expRows+=`<div class="t-row font-medium bg-gray-50 dark:bg-gray-700/50"><div>${catLabel} 小計</div><div class="text-right tabular">${fmt(ct)}</div><div class="text-right tabular text-gray-500">${fmt(pt)}</div><div class="text-right tabular ${dt>0?'text-red-500':dt<0?'text-emerald-600':'text-gray-400'}">${dt===0?'—':(dt>0?'+':'')+fmt(dt)}</div><div class="text-right tabular">${fmt(at)}</div></div>`;
+  });
 
-  // Income table
-  let incRows = '';
-  for(const[ck,cat]of Object.entries(LIFE_INCOME_ITEMS)){
-    cat.items.forEach(item=>{
-      const cur=getVal(y,m,ck,item), ann=sum12(i=>getVal(y,i,ck,item));
-      incRows+=`<tr class="border-t border-gray-100 dark:border-gray-700"><td class="py-2 px-3 text-sm"><span class="inline-block w-2 h-2 rounded-sm mr-2" style="background:${cat.color}"></span>${item}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(cur)}</td><td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(ann)}</td></tr>`;
+  let incRows='';
+  ['収入:予算内','収入:予算外'].forEach(catLabel=>{
+    const ck=LIFE_INC_CATS[catLabel],col=ck==='budget'?'#1D9E75':'#534AB7';
+    const items=itemsForCat(rawData.life,m,catLabel);
+    Object.entries(items).forEach(([item,cur])=>{
+      const ann=annualItemsForCat(rawData.life,catLabel)[item]||0;
+      incRows+=`<tr class="border-t border-gray-100 dark:border-gray-700"><td class="py-2 px-3 text-sm"><span class="inline-block w-2 h-2 rounded-sm mr-2" style="background:${col}"></span>${item}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(cur)}</td><td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(ann)}</td></tr>`;
     });
-    const ct=getCatTotal(LIFE_INCOME_ITEMS,y,m,ck);
-    incRows+=`<tr class="bg-gray-50 dark:bg-gray-700/50 border-t font-medium"><td class="py-2 px-3 text-sm">${cat.label} 小計</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(ct)}</td><td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(sum12(i=>getCatTotal(LIFE_INCOME_ITEMS,y,i,ck)))}</td></tr>`;
-  }
+    const ct=lifeIncCatTotal(m,ck);
+    incRows+=`<tr class="bg-gray-50 dark:bg-gray-700/50 border-t font-medium"><td class="py-2 px-3 text-sm">${catLabel.replace('収入:','')} 小計</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(ct)}</td><td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(sum12(i=>lifeIncCatTotal(i,ck)))}</td></tr>`;
+  });
 
-  // Invest table
-  let invRows = '';
-  for(const[ck,cat]of Object.entries(LIFE_INVEST_CATS)){
-    cat.items.forEach(item=>{
-      const cur=getVal(y,m,ck,item), ann=sum12(i=>getVal(y,i,ck,item));
-      invRows+=`<tr class="border-t border-gray-100 dark:border-gray-700"><td class="py-2 px-3 text-sm"><span class="inline-block w-2 h-2 rounded-sm mr-2" style="background:${cat.color}"></span>${item}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(cur)}</td><td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(ann)}</td></tr>`;
+  let invRows='';
+  ['投資','貯金'].forEach(catLabel=>{
+    const ck=LIFE_INV_CATS[catLabel],col=ck==='invest'?'#1D9E75':'#3266ad';
+    const items=itemsForCat(rawData.life,m,catLabel);
+    Object.entries(items).forEach(([item,cur])=>{
+      invRows+=`<tr class="border-t border-gray-100 dark:border-gray-700"><td class="py-2 px-3 text-sm"><span class="inline-block w-2 h-2 rounded-sm mr-2" style="background:${col}"></span>${item}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(cur)}</td><td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(annualItemsForCat(rawData.life,catLabel)[item]||0)}</td></tr>`;
     });
-    const ct=getCatTotal(LIFE_INVEST_CATS,y,m,ck);
-    invRows+=`<tr class="bg-gray-50 dark:bg-gray-700/50 border-t font-medium"><td class="py-2 px-3 text-sm">${cat.label} 小計</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(ct)}</td><td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(sum12(i=>getCatTotal(LIFE_INVEST_CATS,y,i,ck)))}</td></tr>`;
-  }
+  });
+  const invAnnual=sum12(i=>lifeInvCatTotal(i,'invest'));
 
   return `
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
@@ -463,350 +350,115 @@ function lifeOverviewHTML(y, m) {
       <div class="relative h-56"><canvas id="pieChart"></canvas></div>
     </div>
   </div>
-
   <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6">
     <div class="text-sm font-medium mb-2">支出が手取りの8割以内に収まっているか</div>
     <div class="grid grid-cols-3 gap-4 text-center">
-      <div><div class="text-xs text-gray-500">収入</div><div class="text-lg font-bold tabular">${fmt(income)}</div><div class="text-xs text-gray-500">100%</div></div>
-      <div><div class="text-xs text-gray-500">支出</div><div class="text-lg font-bold tabular ${target80?'text-emerald-600':'text-red-500'}">${fmt(expense)}</div><div class="text-xs ${target80?'text-emerald-600':'text-red-500'} font-medium">${expRate.toFixed(1)}%</div></div>
-      <div><div class="text-xs text-gray-500">投資・貯金</div><div class="text-lg font-bold tabular">${fmt(lifeInvestTotal(y,m))}</div><div class="text-xs text-gray-500">${income>0?((lifeInvestTotal(y,m)/income)*100).toFixed(1):'0.0'}%</div></div>
+      <div><div class="text-xs text-gray-500">収入</div><div class="text-lg font-bold tabular">${fmt(inc)}</div><div class="text-xs text-gray-500">100%</div></div>
+      <div><div class="text-xs text-gray-500">支出</div><div class="text-lg font-bold tabular ${target80?'text-emerald-600':'text-red-500'}">${fmt(exp)}</div><div class="text-xs ${target80?'text-emerald-600':'text-red-500'} font-medium">${expRate.toFixed(1)}%</div></div>
+      <div><div class="text-xs text-gray-500">投資・貯金</div><div class="text-lg font-bold tabular">${fmt(lifeInvest(m))}</div><div class="text-xs text-gray-500">${inc>0?((lifeInvest(m)/inc)*100).toFixed(1):'0.0'}%</div></div>
     </div>
     <div class="mt-3 h-3 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden flex">
       <div class="h-full ${target80?'bg-emerald-500':'bg-red-500'} transition-all" style="width:${Math.min(expRate,100)}%"></div>
-      <div class="h-full bg-blue-400 transition-all" style="width:${income>0?Math.min(lifeInvestTotal(y,m)/income*100,100-Math.min(expRate,100)):0}%"></div>
     </div>
     <div class="flex justify-between text-xs text-gray-500 mt-1"><span>0%</span><span class="text-amber-500 font-medium">80%目標</span><span>100%</span></div>
   </div>
-
   <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
     <div class="text-sm font-medium p-4 pb-2">支出内訳（${MONTHS[m]}）</div>
     <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] px-4 py-2 text-xs text-gray-500 font-medium border-b border-gray-200 dark:border-gray-700"><div>項目</div><div class="text-right">当月</div><div class="text-right">前月</div><div class="text-right">増減</div><div class="text-right">年間累計</div></div>
     <style>.t-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;padding:8px 16px;font-size:13px;border-top:1px solid rgba(0,0,0,0.05)}.t-row:hover{background:rgba(0,0,0,0.02)}</style>
-    ${rows}
+    ${expRows}
   </div>
-
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div class="text-sm font-medium p-4 pb-2">収入の部（${MONTHS[m]}）</div>
       <table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">項目</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">当月</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">年間累計</th></tr></thead><tbody>${incRows}</tbody></table>
     </div>
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div class="flex items-center justify-between p-4 pb-2">
-        <div class="text-sm font-medium">投資・貯金の部（${MONTHS[m]}）</div>
-        <div class="text-right"><span class="text-xs text-gray-500 mr-2">投資 年間累計:</span><span class="text-lg font-bold tabular text-emerald-600">${fmt(sum12(i=>getCatTotal(LIFE_INVEST_CATS,y,i,'invest')))}</span></div>
-      </div>
+      <div class="flex items-center justify-between p-4 pb-2"><div class="text-sm font-medium">投資・貯金の部（${MONTHS[m]}）</div><div class="text-right"><span class="text-xs text-gray-500 mr-2">投資 年間累計:</span><span class="text-lg font-bold tabular text-emerald-600">${fmt(invAnnual)}</span></div></div>
       <table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">項目</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">当月</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">年間累計</th></tr></thead><tbody>${invRows}</tbody></table>
     </div>
   </div>`;
 }
 
-function renderLifeTrendChart(y) {
-  const cc = chartColors();
-  const id2 = MONTHS.map((_,i)=>lifeIncomeTotal(y,i)||null);
-  const ed2 = MONTHS.map((_,i)=>{const e=lifeExpenseTotal(y,i);return e>0?e:null;});
-  const bd = MONTHS.map((_,i)=>{const inc=lifeIncomeTotal(y,i),exp=lifeExpenseTotal(y,i);return(inc>0||exp>0)?inc-exp-lifeInvestTotal(y,i):null;});
-  makeChart('trendChart',{type:'bar',data:{labels:MONTHS,datasets:[
-    {label:'収入',data:id2,backgroundColor:'#1D9E75',borderRadius:3,order:2},
-    {label:'支出',data:ed2,backgroundColor:'#E24B4A',borderRadius:3,order:3},
-    {label:'収支',data:bd,type:'line',borderColor:'#3266ad',borderWidth:2,pointRadius:4,pointBackgroundColor:'#3266ad',fill:false,order:1,tension:0.3}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:false,font:{size:11},color:cc.tick},grid:{display:false}},y:{ticks:{callback:v=>fmtMan(v),font:{size:11},color:cc.tick},grid:{color:cc.grid}}}}});
-  document.getElementById('legendTrend').innerHTML = [['#1D9E75','収入'],['#E24B4A','支出'],['#3266ad','収支']].map(([c,l])=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${c}"></span>${l}</span>`).join('');
-}
+function renderLifeCharts(m) {
+  const cc=chartColors();
+  const id=MONTHS.map((_,i)=>lifeIncome(i)||null),ed=MONTHS.map((_,i)=>{const e=lifeExpense(i);return e>0?e:null;}),bd=MONTHS.map((_,i)=>{const inc2=lifeIncome(i),exp2=lifeExpense(i);return(inc2>0||exp2>0)?inc2-exp2:null;});
+  makeChart('trendChart',{type:'bar',data:{labels:MONTHS,datasets:[{data:id,backgroundColor:'#1D9E75',borderRadius:3,order:2},{data:ed,backgroundColor:'#E24B4A',borderRadius:3,order:3},{data:bd,type:'line',borderColor:'#3266ad',borderWidth:2,pointRadius:4,pointBackgroundColor:'#3266ad',fill:false,order:1,tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:false,font:{size:11},color:cc.tick},grid:{display:false}},y:{ticks:{callback:v=>fmtMan(v),font:{size:11},color:cc.tick},grid:{color:cc.grid}}}}});
+  document.getElementById('legendTrend').innerHTML=[['#1D9E75','収入'],['#E24B4A','支出'],['#3266ad','収支']].map(([c,l])=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${c}"></span>${l}</span>`).join('');
 
-function renderLifePieChart(y, m) {
-  const vals = Object.keys(LIFE_EXPENSE_CATS).map(c=>getCatTotal(LIFE_EXPENSE_CATS,y,m,c));
-  const total = vals.reduce((a,b)=>a+b,0);
-  const colors = Object.values(LIFE_EXPENSE_CATS).map(c=>c.color);
-  const labels = Object.values(LIFE_EXPENSE_CATS).map(c=>c.label);
+  const vals=Object.keys(LIFE_EXP_CATS).map(cl=>lifeExpCatTotal(m,LIFE_EXP_CATS[cl]));
+  const total=vals.reduce((a,b)=>a+b,0);
+  const colors=Object.values(LIFE_EXP_COLORS),labels=Object.values(LIFE_EXP_LABELS);
   makeChart('pieChart',{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false}}}});
-  document.getElementById('legendPie').innerHTML = labels.map((l,i)=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${colors[i]}"></span>${l} ${total>0?Math.round(vals[i]/total*100):0}%</span>`).join('');
+  document.getElementById('legendPie').innerHTML=labels.map((l,i)=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${colors[i]}"></span>${l} ${total>0?Math.round(vals[i]/total*100):0}%</span>`).join('');
 }
 
-function lifeCategoryHTML(y, catKey) {
-  const cat = LIFE_EXPENSE_CATS[catKey]; if (!cat) return '';
-  let tRows='';
-  for(const item of cat.items){let cells=`<td class="py-2 px-3 text-sm font-medium">${item}</td>`;for(let i=0;i<12;i++){const v=getVal(y,i,catKey,item);cells+=`<td class="py-2 px-3 text-right text-sm tabular ${i===state.month?'bg-blue-50 dark:bg-blue-900/20 font-medium':''}">${fmt(v)}</td>`;}cells+=`<td class="py-2 px-3 text-right text-sm font-medium tabular">${fmt(sum12(i=>getVal(y,i,catKey,item)))}</td>`;tRows+=`<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">${cells}</tr>`;}
-  let stCells=`<td class="py-2 px-3 text-sm font-bold">${cat.label} 合計</td>`;for(let i=0;i<12;i++){stCells+=`<td class="py-2 px-3 text-right text-sm font-bold tabular ${i===state.month?'bg-blue-50 dark:bg-blue-900/20':''}">${fmt(getCatTotal(LIFE_EXPENSE_CATS,y,i,catKey))}</td>`;}stCells+=`<td class="py-2 px-3 text-right text-sm font-bold tabular">${fmt(sum12(i=>getCatTotal(LIFE_EXPENSE_CATS,y,i,catKey)))}</td>`;
-  let hCells='<th class="py-2 px-3 text-left text-xs font-medium text-gray-500">項目</th>';MONTHS.forEach((ml,i)=>{hCells+=`<th class="py-2 px-3 text-right text-xs font-medium ${i===state.month?'text-blue-600 dark:text-blue-400':'text-gray-500'}">${ml}</th>`;});hCells+='<th class="py-2 px-3 text-right text-xs font-medium text-gray-500">年間</th>';
-  return `<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto"><table class="w-full min-w-[800px]"><thead><tr class="bg-gray-50 dark:bg-gray-700/50">${hCells}</tr></thead><tbody>${tRows}<tr class="bg-gray-50 dark:bg-gray-700/50 border-t-2 border-gray-300 dark:border-gray-600">${stCells}</tr></tbody></table></div>`;
-}
-
-function lifeAnnualHTML(y) {
-  const aI=sum12(i=>lifeIncomeTotal(y,i)),aE=sum12(i=>lifeExpenseTotal(y,i)),aB=aI-aE;
-  const mwd=Array.from({length:12},(_,i)=>lifeIncomeTotal(y,i)>0||lifeExpenseTotal(y,i)>0?1:0).reduce((a,b)=>a+b,0);
-  const aInvOnly=sum12(i=>getCatTotal(LIFE_INVEST_CATS,y,i,'invest'));
-  let mr='';MONTHS.forEach((ml,i)=>{const inc=lifeIncomeTotal(y,i),exp=lifeExpenseTotal(y,i),bal=inc-exp;mr+=`<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 ${i===state.month?'bg-blue-50 dark:bg-blue-900/20':''}"><td class="py-2 px-3 text-sm font-medium">${ml}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(inc)}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(exp)}</td><td class="py-2 px-3 text-right text-sm tabular ${bal>=0?'text-emerald-600':'text-red-500'}">${fmt(bal)}</td></tr>`;});
+function lifeAnnualHTML() {
+  const aI=sum12(lifeIncome),aE=sum12(lifeExpense),aB=aI-aE;
+  const aInvOnly=sum12(i=>lifeInvCatTotal(i,'invest'));
+  let mr='';MONTHS.forEach((ml,i)=>{const inc=lifeIncome(i),exp=lifeExpense(i),bal=inc-exp;mr+=`<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 ${i===state.month?'bg-blue-50 dark:bg-blue-900/20':''}"><td class="py-2 px-3 text-sm font-medium">${ml}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(inc)}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(exp)}</td><td class="py-2 px-3 text-right text-sm tabular ${bal>=0?'text-emerald-600':'text-red-500'}">${fmt(bal)}</td></tr>`;});
   mr+=`<tr class="bg-gray-50 dark:bg-gray-700/50 border-t-2 border-gray-300 dark:border-gray-600 font-bold"><td class="py-2 px-3 text-sm">年間合計</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(aI)}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(aE)}</td><td class="py-2 px-3 text-right text-sm tabular ${aB>=0?'text-emerald-600':'text-red-500'}">${fmt(aB)}</td></tr>`;
   return `<div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">${kpiCard('年間収入',fmt(aI),'')}${kpiCard('年間支出',fmt(aE),'')}${kpiCard('年間収支',fmt(aB),'',aB>=0?'text-emerald-600':'text-red-500')}</div>
   <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6"><div class="flex items-center justify-between"><div class="text-sm font-medium">投資 年間累計</div><div class="text-2xl font-bold tabular text-emerald-600">${fmt(aInvOnly)}</div></div></div>
-  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto mb-6"><div class="text-sm font-medium p-4 pb-2">月次収支一覧（${y}年）</div><table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">月</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">収入</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">支出</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">収支</th></tr></thead><tbody>${mr}</tbody></table></div>`;
+  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto"><div class="text-sm font-medium p-4 pb-2">月次収支一覧</div><table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">月</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">収入</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">支出</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">収支</th></tr></thead><tbody>${mr}</tbody></table></div>`;
 }
 
-function lifeAverageHTML(y) {
-  const mwd=Array.from({length:12},(_,i)=>lifeIncomeTotal(y,i)>0||lifeExpenseTotal(y,i)>0?1:0).reduce((a,b)=>a+b,0);
-  const n=mwd||1;
-  const aI=sum12(i=>lifeIncomeTotal(y,i))/n,aE=sum12(i=>lifeExpenseTotal(y,i))/n,aInv=sum12(i=>lifeInvestTotal(y,i))/n,aB=aI-aE-aInv;
-  return `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${kpiCard('月平均収入',fmt(aI),'')}${kpiCard('月平均支出',fmt(aE),'')}${kpiCard('月平均投資・貯金',fmt(aInv),'')}${kpiCard('月平均収支',fmt(aB),`<span class="text-xs text-gray-500">対象: ${mwd}ヶ月</span>`,aB>=0?'text-emerald-600':'text-red-500')}</div>
-  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6"><div class="text-sm font-medium mb-2">月別収支（平均との比較）</div><div class="relative h-56"><canvas id="lifeAvgChart"></canvas></div></div>`;
+function lifeAverageHTML() {
+  const mwd=Array.from({length:12},(_,i)=>lifeIncome(i)>0||lifeExpense(i)>0?1:0).reduce((a,b)=>a+b,0);
+  const n=mwd||1,aI=sum12(lifeIncome)/n,aE=sum12(lifeExpense)/n,aB=aI-aE;
+  return `<div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">${kpiCard('月平均収入',fmt(aI),'')}${kpiCard('月平均支出',fmt(aE),'')}${kpiCard('月平均収支',fmt(aB),`<span class="text-xs text-gray-500">対象: ${mwd}ヶ月</span>`,aB>=0?'text-emerald-600':'text-red-500')}</div>`;
 }
 
-function renderLifeAvgChart(y) {
-  const cc=chartColors();
-  const mwd=Array.from({length:12},(_,i)=>lifeIncomeTotal(y,i)>0||lifeExpenseTotal(y,i)>0?1:0).reduce((a,b)=>a+b,0);
-  const n=mwd||1,avg=sum12(i=>lifeBalance(y,i))/n;
-  const bd=Array.from({length:12},(_,i)=>lifeBalance(y,i));
-  const bc=bd.map(b=>b>=0?'#1D9E75':'#E24B4A');
-  makeChart('lifeAvgChart',{type:'bar',data:{labels:MONTHS,datasets:[{data:bd,backgroundColor:bc,borderRadius:3},{data:Array(12).fill(avg),type:'line',borderColor:'#EF9F27',borderWidth:2,borderDash:[6,3],pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:false,font:{size:11},color:cc.tick},grid:{display:false}},y:{ticks:{callback:v=>fmtMan(v),font:{size:11},color:cc.tick},grid:{color:cc.grid}}}}});
-}
+// ======== SPECIAL ========
+function renderSpecial() {
+  document.getElementById('tabBar').innerHTML='';
+  document.getElementById('kpiCards').innerHTML='';
+  const rows=rawData.special||[];
+  const tagTotals={};SPECIAL_TAGS.forEach(t=>tagTotals[t]=0);let gt=0;
+  rows.forEach(r=>{const a=Number(r.amount)||0;gt+=a;if(r.tag&&tagTotals[r.tag]!==undefined)tagTotals[r.tag]+=a;});
 
-function lifeInputHTML(y, m) {
-  let html = `<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"><div class="text-sm font-medium mb-4">${y}年 ${MONTHS[m]} データ入力</div>`;
-  // Income
-  for(const[ck,cat]of Object.entries(LIFE_INCOME_ITEMS)){
-    html+=`<details class="mb-3" open><summary class="flex items-center gap-2 cursor-pointer text-sm font-medium py-2"><span class="w-3 h-3 rounded-sm" style="background:${cat.color}"></span>収入: ${cat.label}</summary><div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-5 mt-2">`;
-    for(const item of cat.items){const v=getVal(y,m,ck,item);html+=`<div><label class="text-xs text-gray-500 block mb-1">${item}</label><input type="number" value="${v||''}" onchange="setVal(${y},${m},'${ck}','${item}',Number(this.value));render()" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm tabular" placeholder="0"></div>`;}
-    html+='</div></details>';
-  }
-  // Expenses
-  for(const[ck,cat]of Object.entries(LIFE_EXPENSE_CATS)){
-    html+=`<details class="mb-3" open><summary class="flex items-center gap-2 cursor-pointer text-sm font-medium py-2"><span class="w-3 h-3 rounded-sm" style="background:${cat.color}"></span>${cat.label}</summary><div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-5 mt-2">`;
-    for(const item of cat.items){const v=getVal(y,m,ck,item);html+=`<div><label class="text-xs text-gray-500 block mb-1">${item}</label><input type="number" value="${v||''}" onchange="setVal(${y},${m},'${ck}','${item}',Number(this.value));render()" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm tabular" placeholder="0"></div>`;}
-    html+='</div></details>';
-  }
-  // Invest
-  for(const[ck,cat]of Object.entries(LIFE_INVEST_CATS)){
-    html+=`<details class="mb-3" open><summary class="flex items-center gap-2 cursor-pointer text-sm font-medium py-2"><span class="w-3 h-3 rounded-sm" style="background:${cat.color}"></span>投資・貯金: ${cat.label}</summary><div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-5 mt-2">`;
-    for(const item of cat.items){const v=getVal(y,m,ck,item);html+=`<div><label class="text-xs text-gray-500 block mb-1">${item}</label><input type="number" value="${v||''}" onchange="setVal(${y},${m},'${ck}','${item}',Number(this.value));render()" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm tabular" placeholder="0"></div>`;}
-    html+='</div></details>';
-  }
-  return html + '</div>';
-}
+  let sc=kpiCard('合計金額',fmt(gt),`<span class="text-xs text-gray-500">${rows.length}件</span>`);
+  SPECIAL_TAGS.forEach(t=>{if(tagTotals[t]>0)sc+=kpiCard(t,fmt(tagTotals[t]),'');});
 
-// ============================
-// IO
-// ============================
-function closeIO() { document.getElementById('ioMenu').classList.add('hidden'); }
-document.addEventListener('click', e => { const m2 = document.getElementById('ioMenu'); if (!m2.classList.contains('hidden') && !e.target.closest('.relative')) m2.classList.add('hidden'); });
-
-function downloadFile(name, content, type) { const blob = new Blob([content], { type }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href); }
-
-function exportJSON() { downloadFile(`dashboard_${state.year}.json`, JSON.stringify(data, null, 2), 'application/json'); }
-
-function exportCSV() {
-  const y = state.year;
-  let csv = '﻿年,月,カテゴリ,項目,金額\n';
-  for (let m2=0;m2<12;m2++) {
-    for(const si of BIZ_SALES_ITEMS){const v=getVal(y,m2,'sales',si);if(v)csv+=`${y},${MONTHS[m2]},売上,${si},${v}\n`;}
-    for(const[ck,cat]of Object.entries(BIZ_CATEGORIES)){for(const item of cat.items){const v=getVal(y,m2,ck,item);if(v)csv+=`${y},${MONTHS[m2]},${cat.label},${item},${v}\n`;}}
-    for(const[ck,cat]of Object.entries(LIFE_INCOME_ITEMS)){for(const item of cat.items){const v=getVal(y,m2,ck,item);if(v)csv+=`${y},${MONTHS[m2]},収入:${cat.label},${item},${v}\n`;}}
-    for(const[ck,cat]of Object.entries(LIFE_EXPENSE_CATS)){for(const item of cat.items){const v=getVal(y,m2,ck,item);if(v)csv+=`${y},${MONTHS[m2]},支出:${cat.label},${item},${v}\n`;}}
-    for(const[ck,cat]of Object.entries(LIFE_INVEST_CATS)){for(const item of cat.items){const v=getVal(y,m2,ck,item);if(v)csv+=`${y},${MONTHS[m2]},投資:${cat.label},${item},${v}\n`;}}
-  }
-  downloadFile(`dashboard_${y}.csv`, csv, 'text/csv;charset=utf-8');
-}
-
-function handleImportJSON(input) {
-  const file = input.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => { try { Object.assign(data, JSON.parse(e.target.result)); saveData(); render(); alert('JSONインポートが完了しました'); } catch(err) { alert('JSONの読み込みに失敗しました: ' + err.message); } };
-  reader.readAsText(file); input.value = '';
-}
-
-function handleImportCSV(input) {
-  const file = input.files[0]; if (!file) return;
-  const allCats = {};
-  for(const[k,v]of Object.entries(BIZ_CATEGORIES)) allCats[v.label]=k;
-  for(const[k,v]of Object.entries(LIFE_EXPENSE_CATS)) allCats['支出:'+v.label]=k;
-  for(const[k,v]of Object.entries(LIFE_INCOME_ITEMS)) allCats['収入:'+v.label]=k;
-  for(const[k,v]of Object.entries(LIFE_INVEST_CATS)) allCats['投資:'+v.label]=k;
-  const monthToIdx = {}; MONTHS.forEach((m2,i)=>monthToIdx[m2]=i);
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const lines = e.target.result.split('\n').filter(l=>l.trim()); let count = 0;
-      for(let i=1;i<lines.length;i++){const cols=lines[i].split(',');if(cols.length<5)continue;const yr=parseInt(cols[0]),mon=cols[1].trim(),catL=cols[2].trim(),item=cols[3].trim(),val=parseFloat(cols[4]);if(isNaN(yr)||isNaN(val)||!(mon in monthToIdx))continue;const mi=monthToIdx[mon];if(catL==='売上'){setVal(yr,mi,'sales',item,val);}else if(catL in allCats){setVal(yr,mi,allCats[catL],item,val);}count++;}
-      render(); alert(`CSVインポート完了: ${count}件`);
-    } catch(err) { alert('CSVの読み込みに失敗しました: ' + err.message); }
-  };
-  reader.readAsText(file); input.value = '';
-}
-
-// ============================
-// SPECIAL MODE (特別費)
-// ============================
-const SPECIAL_TAGS = ['自分のお金で支払ったもの','旅行','特別費','教育','医療','冠婚葬祭','家電・家具','その他'];
-const SPECIAL_DEFAULT = 10;
-
-function getSpecialData(y) {
-  const raw = data[`special_${y}`];
-  if (raw && typeof raw === 'string') try { return JSON.parse(raw); } catch(e) {}
-  if (Array.isArray(raw)) return raw;
-  return [];
-}
-function saveSpecialData(y, rows) { data[`special_${y}`] = JSON.stringify(rows); saveData(); }
-
-function renderSpecial(y) {
-  document.getElementById('tabBar').innerHTML = '';
-  document.getElementById('kpiCards').innerHTML = '';
-
-  const rows = getSpecialData(y);
-
-  // Summaries by tag
-  const tagTotals = {};
-  SPECIAL_TAGS.forEach(t => tagTotals[t] = 0);
-  let grandTotal = 0;
-  rows.forEach(r => { const amt = Number(r.amount) || 0; grandTotal += amt; if (r.tag && tagTotals[r.tag] !== undefined) tagTotals[r.tag] += amt; });
-
-  let summaryCards = `<div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"><div class="text-xs text-gray-500 mb-1">合計金額</div><div class="text-xl font-bold tabular">${fmt(grandTotal)}</div><div class="text-xs text-gray-500 mt-1">${rows.filter(r=>r.amount).length}件</div></div>`;
-  SPECIAL_TAGS.forEach(t => {
-    if (tagTotals[t] > 0) {
-      summaryCards += `<div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"><div class="text-xs text-gray-500 mb-1">${t}</div><div class="text-lg font-bold tabular">${fmt(tagTotals[t])}</div></div>`;
-    }
+  let tr2='';
+  rows.forEach((r,i)=>{
+    tr2+=`<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+      <td class="py-2 px-3 text-center text-xs text-gray-400">${i+1}</td>
+      <td class="py-2 px-3 text-sm">${r.date||''}</td>
+      <td class="py-2 px-3 text-sm">${r.content||''}</td>
+      <td class="py-2 px-3 text-sm">${r.tag?`<span class="px-2 py-0.5 rounded text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">${r.tag}</span>`:''}</td>
+      <td class="py-2 px-3 text-right text-sm tabular">${r.amount?fmt(r.amount):''}</td>
+      <td class="py-2 px-3 text-sm text-gray-500">${r.memo||''}</td>
+    </tr>`;
   });
 
-  // Table rows
-  const rowCount = Math.max(rows.length, SPECIAL_DEFAULT);
-  let tableRows = '';
-  for (let i = 0; i < rowCount; i++) {
-    const r = rows[i] || { date: '', content: '', tag: '', amount: '' };
-    const tagOptions = SPECIAL_TAGS.map(t => `<option value="${t}" ${r.tag===t?'selected':''}>${t}</option>`).join('');
-    tableRows += `<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-      <td class="py-1 px-2 text-center text-xs text-gray-400 w-8">${i+1}</td>
-      <td class="py-1 px-1"><input type="date" value="${r.date}" onchange="updateSpecialRow(${y},${i},'date',this.value)" class="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm"></td>
-      <td class="py-1 px-1"><input type="text" value="${r.content||''}" onchange="updateSpecialRow(${y},${i},'content',this.value)" class="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm" placeholder="内容"></td>
-      <td class="py-1 px-1"><select onchange="updateSpecialRow(${y},${i},'tag',this.value)" class="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm"><option value="">--分類--</option>${tagOptions}</select></td>
-      <td class="py-1 px-1"><input type="number" value="${r.amount||''}" onchange="updateSpecialRow(${y},${i},'amount',this.value)" class="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm tabular text-right" placeholder="0"></td>
-      <td class="py-1 px-1"><input type="text" value="${r.memo||''}" onchange="updateSpecialRow(${y},${i},'memo',this.value)" class="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm" placeholder="メモ"></td>
-    </tr>`;
-  }
-
-  document.getElementById('mainContent').innerHTML = `
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${summaryCards}</div>
+  document.getElementById('mainContent').innerHTML=`
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${sc}</div>
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
       <table class="w-full min-w-[600px]">
         <thead><tr class="bg-gray-50 dark:bg-gray-700/50">
-          <th class="py-2 px-2 text-center text-xs font-medium text-gray-500 w-8">#</th>
-          <th class="py-2 px-2 text-left text-xs font-medium text-gray-500 w-36">日付</th>
-          <th class="py-2 px-2 text-left text-xs font-medium text-gray-500">内容</th>
-          <th class="py-2 px-2 text-left text-xs font-medium text-gray-500 w-44">分類</th>
-          <th class="py-2 px-2 text-right text-xs font-medium text-gray-500 w-32">金額</th>
-          <th class="py-2 px-2 text-left text-xs font-medium text-gray-500 w-40">メモ</th>
+          <th class="py-2 px-3 text-center text-xs font-medium text-gray-500 w-8">#</th>
+          <th class="py-2 px-3 text-left text-xs font-medium text-gray-500 w-28">日付</th>
+          <th class="py-2 px-3 text-left text-xs font-medium text-gray-500">内容</th>
+          <th class="py-2 px-3 text-left text-xs font-medium text-gray-500 w-40">分類</th>
+          <th class="py-2 px-3 text-right text-xs font-medium text-gray-500 w-28">金額</th>
+          <th class="py-2 px-3 text-left text-xs font-medium text-gray-500 w-40">メモ</th>
         </tr></thead>
-        <tbody>${tableRows}</tbody>
+        <tbody>${tr2||'<tr><td colspan="6" class="py-8 text-center text-gray-400 text-sm">スプレッドシートの「特別費」シートにデータを入力してください</td></tr>'}</tbody>
       </table>
-      <div class="p-3 border-t border-gray-200 dark:border-gray-700">
-        <button onclick="addSpecialRows(${y})" class="w-full py-2 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition">＋ 行を追加</button>
-      </div>
     </div>`;
 }
 
-function addSpecialRows(y) {
-  const rows = getSpecialData(y);
-  for (let i = 0; i < 10; i++) rows.push({ date:'', content:'', tag:'', amount:'' });
-  saveSpecialData(y, rows);
-  renderSpecial(y);
-}
+// === INIT ===
+const cached = localStorage.getItem('dashboard_cache');
+if (cached) { try { rawData = JSON.parse(cached); } catch(e) {} }
 
-function updateSpecialRow(y, idx, field, value) {
-  const rows = getSpecialData(y);
-  while (rows.length <= idx) rows.push({ date:'', content:'', tag:'', amount:'' });
-  rows[idx][field] = field === 'amount' ? (Number(value) || 0) : value;
-  saveSpecialData(y, rows);
-  // Update summary cards without full re-render to keep focus
-  const tagTotals = {}; SPECIAL_TAGS.forEach(t => tagTotals[t] = 0); let gt = 0;
-  rows.forEach(r => { const amt = Number(r.amount)||0; gt += amt; if(r.tag && tagTotals[r.tag]!==undefined) tagTotals[r.tag]+=amt; });
-  const kpiEl = document.querySelector('.grid.grid-cols-2.md\\:grid-cols-4');
-  if (kpiEl) {
-    let sc = `<div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"><div class="text-xs text-gray-500 mb-1">合計金額</div><div class="text-xl font-bold tabular">${fmt(gt)}</div><div class="text-xs text-gray-500 mt-1">${rows.filter(r=>r.amount).length}件</div></div>`;
-    SPECIAL_TAGS.forEach(t => { if(tagTotals[t]>0) sc+=`<div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700"><div class="text-xs text-gray-500 mb-1">${t}</div><div class="text-lg font-bold tabular">${fmt(tagTotals[t])}</div></div>`; });
-    kpiEl.innerHTML = sc;
-  }
-}
-
-// ============================
-// CLOUD SYNC (Google Sheets via GAS)
-// ============================
-let GAS_URL = localStorage.getItem('gas_url') || '';
-let autoSync = false;
-let syncTimer = null;
-
-function setupGasUrl() {
-  const url = prompt('Google Apps Script のURLを入力してください:', GAS_URL);
-  if (url !== null) { GAS_URL = url.trim(); localStorage.setItem('gas_url', GAS_URL); alert(GAS_URL ? 'API URL を設定しました' : 'API URL をクリアしました'); }
-}
-function closeSyncMenu() { document.getElementById('syncMenu').classList.add('hidden'); }
-document.addEventListener('click', e => { const sm = document.getElementById('syncMenu'); if (sm && !sm.classList.contains('hidden') && !e.target.closest('#syncBtn') && !e.target.closest('#syncMenu')) sm.classList.add('hidden'); });
-
-function showSyncStatus(msg, isError) {
-  const btn = document.getElementById('syncBtn');
-  const orig = btn.textContent;
-  btn.textContent = msg;
-  if (isError) btn.classList.add('text-red-500');
-  else btn.classList.remove('text-red-500');
-  setTimeout(() => { btn.textContent = autoSync ? '☁️ 自動同期中 ▾' : '☁️ 同期 ▾'; btn.classList.remove('text-red-500'); }, 2000);
-}
-
-function cloudSave() {
-  if (!GAS_URL) { alert('☁️ 同期 ▾ → ⚙️ API URL設定 からGAS URLを設定してください。'); return; }
-  showSyncStatus('⏳ 保存中...', false);
-  fetch(GAS_URL, {
-    method: 'POST', mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: 'save', data: data })
-  }).then(() => {
-    showSyncStatus('✅ 保存完了', false);
-  }).catch(err => {
-    showSyncStatus('❌ 保存失敗', true);
-    console.error(err);
-  });
-}
-
-function cloudLoad() {
-  if (!GAS_URL) { alert('☁️ 同期 ▾ → ⚙️ API URL設定 からGAS URLを設定してください。'); return; }
-  showSyncStatus('⏳ 読込中...', false);
-  const cbName = '_gasCallback_' + Date.now();
-  window[cbName] = function(cloudData) {
-    data = cloudData;
-    saveData();
-    render();
-    showSyncStatus('✅ 読込完了', false);
-    delete window[cbName];
-    document.getElementById(cbName).remove();
-  };
-  const script = document.createElement('script');
-  script.id = cbName;
-  script.src = GAS_URL + '?callback=' + cbName;
-  script.onerror = function() {
-    showSyncStatus('❌ 読込失敗', true);
-    delete window[cbName];
-    script.remove();
-  };
-  document.body.appendChild(script);
-}
-
-function toggleAutoSync() {
-  autoSync = !autoSync;
-  document.getElementById('autoSyncBtn').textContent = autoSync ? '🔄 自動同期OFF' : '🔄 自動同期ON';
-  document.getElementById('syncBtn').textContent = autoSync ? '☁️ 自動同期中 ▾' : '☁️ 同期 ▾';
-  if (autoSync && GAS_URL) cloudSave();
-}
-
-function scheduleSyncIfAuto() {
-  if (!autoSync || !GAS_URL) return;
-  if (syncTimer) clearTimeout(syncTimer);
-  syncTimer = setTimeout(() => { cloudSave(); syncTimer = null; }, 2000);
-}
-
-// Override saveData to trigger auto-sync
-const _origSaveData = saveData;
-saveData = function() { _origSaveData(); scheduleSyncIfAuto(); };
-
-// Init
-loadData();
 const yearSelect = document.getElementById('yearSelect');
-for (let y = 2024; y <= 2030; y++) { const opt = document.createElement('option'); opt.value = y; opt.textContent = y + '年'; if (y === state.year) opt.selected = true; yearSelect.appendChild(opt); }
-yearSelect.onchange = function() { state.year = Number(this.value); render(); };
+for (let y=2024;y<=2030;y++){const o=document.createElement('option');o.value=y;o.textContent=y+'年';if(y===state.year)o.selected=true;yearSelect.appendChild(o);}
+yearSelect.onchange=function(){state.year=Number(this.value);render();};
+
 render();
+if (GAS_URL) setTimeout(loadFromCloud, 500);
 </script>
 </body>
 </html>
