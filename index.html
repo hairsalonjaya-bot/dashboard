@@ -204,6 +204,25 @@ function renderBiz(m) {
   else mc.innerHTML=bizAverageHTML();
 }
 
+function bizSalesBreakdownHTML(m, pm) {
+  const curItems=itemsForCat(rawData.biz,m,'売上'), prevItems=itemsForCat(rawData.biz,pm,'売上');
+  const allItems=new Set([...Object.keys(curItems),...Object.keys(prevItems)]);
+  if (allItems.size <= 1) return '';
+  let sRows='';
+  allItems.forEach(item=>{
+    const cur=curItems[item]||0,prev=prevItems[item]||0,diff=cur-prev;
+    const ann=annualItemsForCat(rawData.biz,'売上')[item]||0;
+    sRows+=`<div class="t-row"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-sm" style="background:#D85A30"></span>${item}</div><div class="text-right tabular">${fmt(cur)}</div><div class="text-right tabular text-gray-500">${fmt(prev)}</div><div class="text-right tabular ${diff>0?'text-emerald-600':diff<0?'text-red-500':'text-gray-400'}">${diff===0?'—':(diff>0?'+':'')+fmt(diff)}</div><div class="text-right tabular">${fmt(ann)}</div></div>`;
+  });
+  const ct=bizSales(m),pt=bizSales(pm),dt=ct-pt,at=sum12(bizSales);
+  sRows+=`<div class="t-row font-medium bg-gray-50 dark:bg-gray-700/50"><div>売上合計</div><div class="text-right tabular">${fmt(ct)}</div><div class="text-right tabular text-gray-500">${fmt(pt)}</div><div class="text-right tabular ${dt>0?'text-emerald-600':dt<0?'text-red-500':'text-gray-400'}">${dt===0?'—':(dt>0?'+':'')+fmt(dt)}</div><div class="text-right tabular">${fmt(at)}</div></div>`;
+  return `<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+    <div class="text-sm font-medium p-4 pb-2">売上内訳（${MONTHS[m]}）</div>
+    <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] px-4 py-2 text-xs text-gray-500 font-medium border-b border-gray-200 dark:border-gray-700"><div>項目</div><div class="text-right">当月</div><div class="text-right">前月</div><div class="text-right">増減</div><div class="text-right">年間累計</div></div>
+    <style>.t-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;padding:8px 16px;font-size:13px;border-top:1px solid rgba(0,0,0,0.05)}.t-row:hover{background:rgba(0,0,0,0.02)}</style>
+    ${sRows}</div>`;
+}
+
 function bizOverviewHTML(m) {
   const pm=(m-1+12)%12;
   const expCats=['固定費','変動費','その他経費','事業経費'];
@@ -237,6 +256,7 @@ function bizOverviewHTML(m) {
       <div class="relative h-56"><canvas id="pieChart"></canvas></div>
     </div>
   </div>
+  ${bizSalesBreakdownHTML(m,pm)}
   <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
     <div class="text-sm font-medium p-4 pb-2">経費内訳（${MONTHS[m]}）</div>
     <div class="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] px-4 py-2 text-xs text-gray-500 font-medium border-b border-gray-200 dark:border-gray-700"><div>項目</div><div class="text-right">当月</div><div class="text-right">前月</div><div class="text-right">増減</div><div class="text-right">年間累計</div></div>
