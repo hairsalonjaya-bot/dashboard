@@ -207,7 +207,7 @@ function renderBiz(m) {
 function bizSalesBreakdownHTML(m, pm) {
   const curItems=itemsForCat(rawData.biz,m,'売上'), prevItems=itemsForCat(rawData.biz,pm,'売上');
   const allItems=new Set([...Object.keys(curItems),...Object.keys(prevItems)]);
-  if (allItems.size <= 1) return '';
+  if (allItems.size === 0) return '';
   let sRows='';
   allItems.forEach(item=>{
     const cur=curItems[item]||0,prev=prevItems[item]||0,diff=cur-prev;
