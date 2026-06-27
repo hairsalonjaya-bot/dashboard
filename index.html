@@ -99,7 +99,7 @@ function delta(cur, prev, invert) {
 
 // === DATA HELPERS ===
 function bizByMonth(mi) {
-  return rawData.biz.filter(r => monthIdx(r.month) === mi);
+  return rawData.biz.filter(r => r.year===state.year && monthIdx(r.month) === mi);
 }
 function bizSales(mi) { return bizByMonth(mi).filter(r=>BIZ_CAT_MAP[r.category]==='sales').reduce((s,r)=>s+r.amount,0); }
 function bizCatTotal(mi, catKey) { return bizByMonth(mi).filter(r=>BIZ_CAT_MAP[r.category]===catKey).reduce((s,r)=>s+r.amount,0); }
@@ -107,7 +107,7 @@ function bizExpense(mi) { return ['fixed','variable','other','biz'].reduce((s,c)
 function bizProfit(mi) { return bizSales(mi)-bizExpense(mi); }
 function sum12(fn) { return Array.from({length:12},(_,i)=>fn(i)).reduce((a,b)=>a+b,0); }
 
-function lifeByMonth(mi) { return rawData.life.filter(r=>monthIdx(r.month)===mi); }
+function lifeByMonth(mi) { return rawData.life.filter(r=>r.year===state.year && monthIdx(r.month)===mi); }
 function lifeIncome(mi) { return lifeByMonth(mi).filter(r=>LIFE_INC_CATS[r.category]).reduce((s,r)=>s+r.amount,0); }
 function lifeExpense(mi) { return lifeByMonth(mi).filter(r=>LIFE_EXP_CATS[r.category]).reduce((s,r)=>s+r.amount,0); }
 function lifeInvest(mi) { return lifeByMonth(mi).filter(r=>LIFE_INV_CATS[r.category]).reduce((s,r)=>s+r.amount,0); }
@@ -117,12 +117,12 @@ function lifeInvCatTotal(mi, catKey) { return lifeByMonth(mi).filter(r=>LIFE_INV
 
 function itemsForCat(dataArr, mi, catLabel) {
   const items = {};
-  dataArr.filter(r=>monthIdx(r.month)===mi && r.category===catLabel).forEach(r=>{items[r.item]=(items[r.item]||0)+r.amount;});
+  dataArr.filter(r=>r.year===state.year && monthIdx(r.month)===mi && r.category===catLabel).forEach(r=>{items[r.item]=(items[r.item]||0)+r.amount;});
   return items;
 }
 function annualItemsForCat(dataArr, catLabel) {
   const items = {};
-  dataArr.filter(r=>r.category===catLabel).forEach(r=>{items[r.item]=(items[r.item]||0)+r.amount;});
+  dataArr.filter(r=>r.year===state.year && r.category===catLabel).forEach(r=>{items[r.item]=(items[r.item]||0)+r.amount;});
   return items;
 }
 
@@ -413,7 +413,7 @@ function lifeAverageHTML() {
 function renderSpecial() {
   document.getElementById('tabBar').innerHTML='';
   document.getElementById('kpiCards').innerHTML='';
-  const rows=rawData.special||[];
+  const rows=(rawData.special||[]).filter(r=>r.year===state.year||!r.year);
   const tagTotals={};SPECIAL_TAGS.forEach(t=>tagTotals[t]=0);let gt=0;
   rows.forEach(r=>{const a=Number(r.amount)||0;gt+=a;if(r.tag&&tagTotals[r.tag]!==undefined)tagTotals[r.tag]+=a;});
 
