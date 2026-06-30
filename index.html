@@ -606,28 +606,36 @@ function renderYearly() {
   }
 
   // タブ選択（メトリクス）
-  if (!['sales','expense','profit','invest'].includes(state.tab)) state.tab = 'sales';
+  if (!['sales','expense','profit','invest','life_exp','life_bal'].includes(state.tab)) state.tab = 'sales';
   renderTabBar([
-    {id:'sales',   label:'売上'},
-    {id:'expense', label:'経費'},
-    {id:'profit',  label:'利益'},
-    {id:'invest',  label:'投資'},
+    {id:'sales',    label:'売上'},
+    {id:'expense',  label:'事業経費'},
+    {id:'profit',   label:'利益'},
+    {id:'invest',   label:'投資'},
+    {id:'life_exp', label:'生活支出'},
+    {id:'life_bal', label:'生活収支'},
   ]);
 
   // 月×年 の値を返す関数
   function monthVal(y, mi, metric) {
     const yr = Number(y);
-    if (metric === 'sales')   return rawData.biz.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && BIZ_CAT_MAP[r.category]==='sales').reduce((s,r)=>s+r.amount,0);
-    if (metric === 'expense') return rawData.biz.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && ['fixed','variable','other','biz'].includes(BIZ_CAT_MAP[r.category])).reduce((s,r)=>s+r.amount,0);
-    if (metric === 'profit')  { const s=monthVal(y,mi,'sales'),e=monthVal(y,mi,'expense'); return (s>0||e>0)?s-e:null; }
-    if (metric === 'invest')  return rawData.life.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && LIFE_INV_CATS[r.category]==='invest').reduce((s,r)=>s+r.amount,0);
+    if (metric === 'sales')    return rawData.biz.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && BIZ_CAT_MAP[r.category]==='sales').reduce((s,r)=>s+r.amount,0);
+    if (metric === 'expense')  return rawData.biz.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && ['fixed','variable','other','biz'].includes(BIZ_CAT_MAP[r.category])).reduce((s,r)=>s+r.amount,0);
+    if (metric === 'profit')   { const s=monthVal(y,mi,'sales'),e=monthVal(y,mi,'expense'); return (s>0||e>0)?s-e:null; }
+    if (metric === 'invest')   return rawData.life.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && LIFE_INV_CATS[r.category]==='invest').reduce((s,r)=>s+r.amount,0);
+    if (metric === 'life_exp') return rawData.life.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && LIFE_EXP_CATS[r.category]).reduce((s,r)=>s+r.amount,0);
+    if (metric === 'life_bal') {
+      const inc=rawData.life.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && LIFE_INC_CATS[r.category]).reduce((s,r)=>s+r.amount,0);
+      const exp=rawData.life.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && LIFE_EXP_CATS[r.category]).reduce((s,r)=>s+r.amount,0);
+      return (inc>0||exp>0)?inc-exp:null;
+    }
     return 0;
   }
 
   const metric = state.tab;
-  const metricLabel = {sales:'売上高', expense:'経費合計', profit:'営業利益', invest:'投資'}[metric];
-  const isInvert = metric === 'expense';
-  const isProfit = metric === 'profit';
+  const metricLabel = {sales:'売上高', expense:'事業経費合計', profit:'営業利益', invest:'投資', life_exp:'生活支出', life_bal:'生活収支'}[metric];
+  const isInvert = metric === 'expense' || metric === 'life_exp';
+  const isProfit = metric === 'profit' || metric === 'life_bal';
 
   // 期間集計
   const pFrom = state.periodFrom, pTo = state.periodTo;
