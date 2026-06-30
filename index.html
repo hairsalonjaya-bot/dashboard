@@ -587,107 +587,117 @@ function renderSpecial() {
 }
 
 // ======== YEARLY ========
-function renderYearly() {
-  document.getElementById('tabBar').innerHTML = '';
-  document.getElementById('kpiCards').innerHTML = '';
-  document.getElementById('headerTitle').textContent = '年度比較';
+const YEAR_PALETTE = ['#3266ad','#D85A30','#1D9E75','#7F77DD','#EF9F27','#E24B4A'];
 
-  // 全データから年一覧を取得
+function renderYearly() {
+  document.getElementById('headerTitle').textContent = '同月比較';
+  document.getElementById('kpiCards').innerHTML = '';
+
   const yearSet = new Set();
   rawData.biz.forEach(r => { if(r.year) yearSet.add(Number(r.year)); });
   rawData.life.forEach(r => { if(r.year) yearSet.add(Number(r.year)); });
   const years = Array.from(yearSet).sort();
 
   if (years.length === 0) {
+    document.getElementById('tabBar').innerHTML = '';
     document.getElementById('mainContent').innerHTML = '<div class="text-center text-gray-400 py-16">データがありません。🔄 読込 を押してください。</div>';
     return;
   }
 
-  // 年ごとに集計
-  function yearBizSales(y) { return rawData.biz.filter(r=>Number(r.year)===y && BIZ_CAT_MAP[r.category]==='sales').reduce((s,r)=>s+r.amount,0); }
-  function yearBizExpense(y) { return rawData.biz.filter(r=>Number(r.year)===y && ['fixed','variable','other','biz'].includes(BIZ_CAT_MAP[r.category])).reduce((s,r)=>s+r.amount,0); }
-  function yearBizProfit(y) { return yearBizSales(y) - yearBizExpense(y); }
-  function yearInvest(y) { return rawData.life.filter(r=>Number(r.year)===y && LIFE_INV_CATS[r.category]==='invest').reduce((s,r)=>s+r.amount,0); }
+  // タブ選択（メトリクス）
+  if (!['sales','expense','profit','invest'].includes(state.tab)) state.tab = 'sales';
+  renderTabBar([
+    {id:'sales',   label:'売上'},
+    {id:'expense', label:'経費'},
+    {id:'profit',  label:'利益'},
+    {id:'invest',  label:'投資'},
+  ]);
 
-  const salesData  = years.map(yearBizSales);
-  const expData    = years.map(yearBizExpense);
-  const profitData = years.map(yearBizProfit);
-  const investData = years.map(yearInvest);
-
-  // KPIカード（最新年 vs 前年）
-  const ly = years[years.length-1], py = years[years.length-2];
-  const lSales=yearBizSales(ly), pSales=py?yearBizSales(py):0;
-  const lExp=yearBizExpense(ly), pExp=py?yearBizExpense(py):0;
-  const lProfit=yearBizProfit(ly), pProfit=py?yearBizProfit(py):0;
-  const lInvest=yearInvest(ly), pInvest=py?yearInvest(py):0;
-  function ydelta(cur,prev,invert){
-    if(!prev) return '<span class="text-gray-400 text-xs">—</span>';
-    const pct=((cur-prev)/Math.abs(prev)*100).toFixed(1);
-    const up=parseFloat(pct)>=0, good=invert?!up:up;
-    return `<span class="text-xs ${good?'text-emerald-600':'text-red-500'}">${up?'↑':'↓'} ${Math.abs(pct)}% 前年比</span>`;
+  // 月×年 の値を返す関数
+  function monthVal(y, mi, metric) {
+    const yr = Number(y);
+    if (metric === 'sales')   return rawData.biz.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && BIZ_CAT_MAP[r.category]==='sales').reduce((s,r)=>s+r.amount,0);
+    if (metric === 'expense') return rawData.biz.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && ['fixed','variable','other','biz'].includes(BIZ_CAT_MAP[r.category])).reduce((s,r)=>s+r.amount,0);
+    if (metric === 'profit')  { const s=monthVal(y,mi,'sales'),e=monthVal(y,mi,'expense'); return (s>0||e>0)?s-e:null; }
+    if (metric === 'invest')  return rawData.life.filter(r=>Number(r.year)===yr && monthIdx(r.month)===mi && LIFE_INV_CATS[r.category]==='invest').reduce((s,r)=>s+r.amount,0);
+    return 0;
   }
-  document.getElementById('kpiCards').innerHTML =
-    kpiCard(`売上（${ly}年）`,fmt(lSales),ydelta(lSales,pSales,false)) +
-    kpiCard(`経費（${ly}年）`,fmt(lExp),ydelta(lExp,pExp,true)) +
-    kpiCard(`利益（${ly}年）`,fmt(lProfit),ydelta(lProfit,pProfit,false),lProfit>=0?'text-emerald-600':'text-red-500') +
-    kpiCard(`投資（${ly}年）`,fmt(lInvest),ydelta(lInvest,pInvest,false),'text-emerald-600');
+
+  const metric = state.tab;
+  const metricLabel = {sales:'売上高', expense:'経費合計', profit:'営業利益', invest:'投資'}[metric];
+  const isInvert = metric === 'expense';
+  const isProfit = metric === 'profit';
+
+  const cc = chartColors();
+  // チャート用データセット（年ごとに1ライン）
+  const datasets = years.map((y, yi) => {
+    const col = YEAR_PALETTE[yi % YEAR_PALETTE.length];
+    const data = MONTHS.map((_, mi) => { const v=monthVal(y,mi,metric); return v===null||v===0?null:v; });
+    return { label: y+'年', data, borderColor: col, backgroundColor: col+'33', borderWidth: 2, pointRadius: 4, pointBackgroundColor: col, fill: false, tension: 0.3, spanGaps: false };
+  });
+
+  // 比較テーブル（行=月、列=年ごとの値＋前年比）
+  const ly = years[years.length-1];
+  const py = years.length >= 2 ? years[years.length-2] : null;
+
+  let tableHead = '<th class="py-2 px-3 text-left text-xs font-medium text-gray-500">月</th>';
+  years.forEach((y,yi) => {
+    const col = YEAR_PALETTE[yi % YEAR_PALETTE.length];
+    tableHead += `<th class="py-2 px-3 text-right text-xs font-medium whitespace-nowrap" style="color:${col}">${y}年</th>`;
+  });
+  if (py) tableHead += `<th class="py-2 px-3 text-right text-xs font-medium text-gray-500">前年比</th>`;
+
+  let tableRows = '';
+  let annuals = years.map(() => 0);
+  MONTHS.forEach((ml, mi) => {
+    const vals = years.map(y => monthVal(y, mi, metric));
+    const lv = vals[vals.length-1] || 0;
+    const pv = py ? (vals[vals.length-2] || 0) : null;
+    const diff = pv !== null ? lv - pv : null;
+    const pct = pv ? ((lv-pv)/Math.abs(pv)*100).toFixed(1) : null;
+    const good = pct !== null ? (isInvert ? parseFloat(pct)<0 : parseFloat(pct)>=0) : true;
+    vals.forEach((v,i) => { if(v) annuals[i] += v; });
+    tableRows += `<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/20">
+      <td class="py-2 px-3 text-sm font-medium">${ml}</td>
+      ${vals.map(v=>`<td class="py-2 px-3 text-right text-sm tabular ${isProfit?(v>=0?'text-emerald-600':'text-red-500'):''}">${v?fmt(v):'—'}</td>`).join('')}
+      ${py ? `<td class="py-2 px-3 text-right text-xs tabular ${pct!==null?(good?'text-emerald-600':'text-red-500'):'text-gray-400'}">${pct!==null?(parseFloat(pct)>=0?'↑':'↓')+' '+Math.abs(pct)+'%':'—'}</td>` : ''}
+    </tr>`;
+  });
+  // 年間合計行
+  tableRows += `<tr class="bg-gray-50 dark:bg-gray-700/50 border-t-2 border-gray-300 dark:border-gray-600 font-bold">
+    <td class="py-2 px-3 text-sm">年間合計</td>
+    ${annuals.map(v=>`<td class="py-2 px-3 text-right text-sm tabular">${v?fmt(v):'—'}</td>`).join('')}
+    ${py ? (() => { const lv=annuals[annuals.length-1],pv=annuals[annuals.length-2]; const pct=pv?((lv-pv)/Math.abs(pv)*100).toFixed(1):null; const good=pct!==null?(isInvert?parseFloat(pct)<0:parseFloat(pct)>=0):true; return `<td class="py-2 px-3 text-right text-xs tabular ${pct!==null?(good?'text-emerald-600':'text-red-500'):'text-gray-400'}">${pct!==null?(parseFloat(pct)>=0?'↑':'↓')+' '+Math.abs(pct)+'%':'—'}</td>`; })() : ''}
+  </tr>`;
+
+  const legendHTML = years.map((y,yi)=>`<span class="flex items-center gap-1.5"><span class="w-5 h-0.5 inline-block rounded" style="background:${YEAR_PALETTE[yi%YEAR_PALETTE.length]}"></span><span>${y}年</span></span>`).join('');
 
   document.getElementById('mainContent').innerHTML = `
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
-      <div class="text-sm font-medium mb-1">売上・経費・利益の推移</div>
-      <div id="legendYearBiz" class="flex flex-wrap gap-4 text-xs text-gray-500 mb-2"></div>
-      <div class="relative h-72"><canvas id="yearBizChart"></canvas></div>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
-      <div class="text-sm font-medium mb-1">投資の推移</div>
-      <div class="relative h-48"><canvas id="yearInvestChart"></canvas></div>
+      <div class="flex items-center justify-between mb-1">
+        <div class="text-sm font-medium">${metricLabel} — 同月年度比較</div>
+        <div class="flex flex-wrap gap-3 text-xs text-gray-500" id="yearLegend">${legendHTML}</div>
+      </div>
+      <div class="relative h-72"><canvas id="yearLineChart"></canvas></div>
     </div>
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
-      <div class="text-sm font-medium p-4 pb-2">年度別サマリー</div>
+      <div class="text-sm font-medium p-4 pb-2">${metricLabel} 月別一覧</div>
       <table class="w-full">
-        <thead><tr class="bg-gray-50 dark:bg-gray-700/50">
-          <th class="py-2 px-3 text-left text-xs font-medium text-gray-500">年度</th>
-          <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">売上高</th>
-          <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">経費合計</th>
-          <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">営業利益</th>
-          <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">利益率</th>
-          <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">投資</th>
-        </tr></thead>
-        <tbody>${years.map(y => {
-          const s=yearBizSales(y),e=yearBizExpense(y),p=yearBizProfit(y),r=s>0?p/s:0,inv=yearInvest(y);
-          return `<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 ${y===ly?'bg-purple-50 dark:bg-purple-900/20 font-medium':''}">
-            <td class="py-2 px-3 text-sm">${y}年</td>
-            <td class="py-2 px-3 text-right text-sm tabular">${fmt(s)}</td>
-            <td class="py-2 px-3 text-right text-sm tabular">${fmt(e)}</td>
-            <td class="py-2 px-3 text-right text-sm tabular ${p>=0?'text-emerald-600':'text-red-500'}">${fmt(p)}</td>
-            <td class="py-2 px-3 text-right text-sm tabular">${fmtPct(r)}</td>
-            <td class="py-2 px-3 text-right text-sm tabular text-emerald-600">${fmt(inv)}</td>
-          </tr>`;
-        }).join('')}</tbody>
+        <thead><tr class="bg-gray-50 dark:bg-gray-700/50">${tableHead}</tr></thead>
+        <tbody>${tableRows}</tbody>
       </table>
     </div>`;
 
-  const cc = chartColors();
-  const yLabels = years.map(y=>y+'年');
-  makeChart('yearBizChart', {
-    type: 'bar',
-    data: { labels: yLabels, datasets: [
-      { label:'売上高', data: salesData, backgroundColor:'#3266ad', borderRadius:4, order:2 },
-      { label:'経費合計', data: expData, backgroundColor:'#B4B2A9', borderRadius:4, order:3 },
-      { label:'営業利益', data: profitData, type:'line', borderColor:'#1D9E75', borderWidth:2.5, pointRadius:5, pointBackgroundColor:'#1D9E75', fill:false, order:1, tension:0.3 }
-    ]},
-    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
-      scales:{ x:{ ticks:{font:{size:12},color:cc.tick}, grid:{display:false} }, y:{ ticks:{callback:v=>fmtMan(v),font:{size:11},color:cc.tick}, grid:{color:cc.grid} } } }
-  });
-  document.getElementById('legendYearBiz').innerHTML = [['#3266ad','売上高'],['#B4B2A9','経費合計'],['#1D9E75','営業利益']].map(([c,l])=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${c}"></span>${l}</span>`).join('');
-
-  makeChart('yearInvestChart', {
-    type: 'bar',
-    data: { labels: yLabels, datasets: [
-      { label:'投資', data: investData, backgroundColor:'#1D9E75', borderRadius:4 }
-    ]},
-    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
-      scales:{ x:{ ticks:{font:{size:12},color:cc.tick}, grid:{display:false} }, y:{ ticks:{callback:v=>fmtMan(v),font:{size:11},color:cc.tick}, grid:{color:cc.grid} } } }
+  makeChart('yearLineChart', {
+    type: 'line',
+    data: { labels: MONTHS, datasets },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label: ctx=>`${ctx.dataset.label}: ${fmt(ctx.raw)}`}} },
+      scales:{
+        x:{ ticks:{autoSkip:false,font:{size:11},color:cc.tick}, grid:{display:false} },
+        y:{ ticks:{callback:v=>fmtMan(v),font:{size:11},color:cc.tick}, grid:{color:cc.grid} }
+      }
+    }
   });
 }
 
