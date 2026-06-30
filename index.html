@@ -185,12 +185,12 @@ function render() {
 
   if (state.mode==='biz') renderBiz(m);
   else if (state.mode==='life') renderLife(m);
-  else renderSpecial();
+  else if (state.mode==='special') renderSpecial();
 }
 
 // ======== BIZ ========
 function renderBiz(m) {
-  renderTabBar([{id:'overview',label:'概要'},{id:'annual',label:'年間総合'},{id:'average',label:'月平均'}]);
+  renderTabBar([{id:'overview',label:'概要'},{id:'annual',label:'年間総合'},{id:'average',label:'月平均'},{id:'expense_all',label:'月別経費'}]);
   const s=bizSales(m),e=bizExpense(m),p=bizProfit(m),r=s>0?p/s:0;
   const pm=(m-1+12)%12,ps=bizSales(pm),pe=bizExpense(pm),pp=ps-pe,pr=ps>0?pp/ps:0;
   document.getElementById('kpiCards').innerHTML =
@@ -201,6 +201,7 @@ function renderBiz(m) {
   const mc=document.getElementById('mainContent');
   if(state.tab==='overview') { mc.innerHTML=bizOverviewHTML(m); renderBizCharts(m); }
   else if(state.tab==='annual') mc.innerHTML=bizAnnualHTML();
+  else if(state.tab==='expense_all') mc.innerHTML=bizExpenseAllHTML();
   else mc.innerHTML=bizAverageHTML();
 }
 
@@ -296,6 +297,64 @@ function bizAnnualHTML() {
   <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto"><div class="text-sm font-medium p-4 pb-2">月次損益一覧</div><table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">月</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">売上高</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">経費合計</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">営業利益</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">利益率</th></tr></thead><tbody>${mr}</tbody></table></div>`;
 }
 
+function bizExpenseAllHTML() {
+  const expCats = ['固定費','変動費','その他経費','事業経費'];
+  const allItems = [];
+  expCats.forEach(catLabel => {
+    const ck = BIZ_CAT_MAP[catLabel], col = BIZ_CAT_COLORS[ck];
+    const seen = new Set();
+    for(let i=0;i<12;i++) { Object.keys(itemsForCat(rawData.biz,i,catLabel)).forEach(it=>seen.add(it)); }
+    seen.forEach(item => allItems.push({catLabel,ck,col,item}));
+    allItems.push({catLabel,ck,col,item:null,isTotal:true});
+  });
+
+  const thStyle = 'py-2 px-2 text-right text-xs font-medium text-gray-500 whitespace-nowrap';
+  const tdBase = 'py-2 px-2 text-right text-xs tabular whitespace-nowrap';
+  let header = `<th class="py-2 px-3 text-left text-xs font-medium text-gray-500 sticky left-0 bg-white dark:bg-gray-800 z-10 min-w-[140px]">項目</th>`;
+  MONTHS.forEach(ml => { header += `<th class="${thStyle}">${ml}</th>`; });
+  header += `<th class="${thStyle} text-gray-700 dark:text-gray-300">年間計</th>`;
+
+  let rows = '';
+  let prevCat = null;
+  allItems.forEach(({catLabel,ck,col,item,isTotal}) => {
+    if(catLabel !== prevCat && !isTotal) {
+      rows += `<tr class="bg-gray-100 dark:bg-gray-700/60"><td colspan="14" class="py-1 px-3 text-xs font-bold" style="color:${col}">${catLabel}</td></tr>`;
+      prevCat = catLabel;
+    }
+    if(isTotal) {
+      const vals = MONTHS.map((_,i) => bizCatTotal(i,ck));
+      const ann = vals.reduce((a,b)=>a+b,0);
+      rows += `<tr class="bg-gray-50 dark:bg-gray-700/40 font-medium border-t border-gray-200 dark:border-gray-600">
+        <td class="py-1.5 px-3 text-xs sticky left-0 bg-gray-50 dark:bg-gray-700/40 z-10">${catLabel} 小計</td>
+        ${vals.map(v=>`<td class="${tdBase} font-medium">${v>0?fmt(v):'—'}</td>`).join('')}
+        <td class="${tdBase} font-bold">${fmt(ann)}</td></tr>`;
+    } else {
+      const vals = MONTHS.map((_,i) => (itemsForCat(rawData.biz,i,catLabel)[item])||0);
+      const ann = vals.reduce((a,b)=>a+b,0);
+      if(ann === 0) return;
+      rows += `<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/20">
+        <td class="py-1.5 px-3 text-xs sticky left-0 bg-white dark:bg-gray-800 z-10"><span class="inline-block w-2 h-2 rounded-sm mr-1.5" style="background:${col}"></span>${item}</td>
+        ${vals.map(v=>`<td class="${tdBase} text-gray-600 dark:text-gray-400">${v>0?fmt(v):'—'}</td>`).join('')}
+        <td class="${tdBase}">${fmt(ann)}</td></tr>`;
+    }
+  });
+
+  const totals = MONTHS.map((_,i)=>bizExpense(i));
+  const grandTotal = totals.reduce((a,b)=>a+b,0);
+  rows += `<tr class="bg-gray-100 dark:bg-gray-600/50 border-t-2 border-gray-300 dark:border-gray-500 font-bold">
+    <td class="py-2 px-3 text-xs sticky left-0 bg-gray-100 dark:bg-gray-600/50 z-10">経費 合計</td>
+    ${totals.map(v=>`<td class="${tdBase} font-bold">${v>0?fmt(v):'—'}</td>`).join('')}
+    <td class="${tdBase} font-bold">${fmt(grandTotal)}</td></tr>`;
+
+  return `<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
+    <div class="text-sm font-medium p-4 pb-2">経費 月別一覧（${state.year}年）</div>
+    <table class="w-full text-sm border-collapse">
+      <thead><tr class="bg-gray-50 dark:bg-gray-700/50">${header}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
 function bizAverageHTML() {
   const mwd=Array.from({length:12},(_,i)=>bizSales(i)>0||bizExpense(i)>0?1:0).reduce((a,b)=>a+b,0);
   const n=mwd||1,aS=sum12(bizSales)/n,aE=sum12(bizExpense)/n,aP=aS-aE,aR=aS>0?aP/aS:0;
@@ -304,7 +363,7 @@ function bizAverageHTML() {
 
 // ======== LIFE ========
 function renderLife(m) {
-  renderTabBar([{id:'overview',label:'概要'},{id:'annual',label:'年間総合'},{id:'average',label:'月平均'}]);
+  renderTabBar([{id:'overview',label:'概要'},{id:'annual',label:'年間総合'},{id:'average',label:'月平均'},{id:'invest_all',label:'月別投資'}]);
   const inc=lifeIncome(m),exp=lifeExpense(m),bal=inc-exp;
   const pm=(m-1+12)%12,pi=lifeIncome(pm),pe=lifeExpense(pm),pb=pi-pe;
   document.getElementById('kpiCards').innerHTML =
@@ -314,6 +373,7 @@ function renderLife(m) {
   const mc=document.getElementById('mainContent');
   if(state.tab==='overview'){mc.innerHTML=lifeOverviewHTML(m);renderLifeCharts(m);}
   else if(state.tab==='annual') mc.innerHTML=lifeAnnualHTML();
+  else if(state.tab==='invest_all') mc.innerHTML=lifeInvestAllHTML();
   else mc.innerHTML=lifeAverageHTML();
 }
 
@@ -421,6 +481,61 @@ function lifeAnnualHTML() {
   return `<div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">${kpiCard('年間収入',fmt(aI),'')}${kpiCard('年間支出',fmt(aE),'')}${kpiCard('年間収支',fmt(aB),'',aB>=0?'text-emerald-600':'text-red-500')}</div>
   <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6"><div class="flex items-center justify-between"><div class="text-sm font-medium">投資 年間累計</div><div class="text-2xl font-bold tabular text-emerald-600">${fmt(aInvOnly)}</div></div></div>
   <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto"><div class="text-sm font-medium p-4 pb-2">月次収支一覧</div><table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">月</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">収入</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">支出</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">収支</th></tr></thead><tbody>${mr}</tbody></table></div>`;
+}
+
+function lifeInvestAllHTML() {
+  const thStyle = 'py-2 px-2 text-right text-xs font-medium text-gray-500 whitespace-nowrap';
+  const tdBase = 'py-2 px-2 text-right text-xs tabular whitespace-nowrap';
+
+  let header = `<th class="py-2 px-3 text-left text-xs font-medium text-gray-500 sticky left-0 bg-white dark:bg-gray-800 z-10 min-w-[140px]">項目</th>`;
+  MONTHS.forEach(ml => { header += `<th class="${thStyle}">${ml}</th>`; });
+  header += `<th class="${thStyle} text-gray-700 dark:text-gray-300">年間計</th>`;
+
+  let rows = '';
+  ['投資','貯金'].forEach(catLabel => {
+    const ck = LIFE_INV_CATS[catLabel];
+    const col = ck==='invest' ? '#1D9E75' : '#3266ad';
+    const seen = new Set();
+    for(let i=0;i<12;i++) { Object.keys(itemsForCat(rawData.life,i,catLabel)).forEach(it=>seen.add(it)); }
+    if(seen.size === 0) return;
+
+    rows += `<tr class="bg-gray-100 dark:bg-gray-700/60"><td colspan="14" class="py-1 px-3 text-xs font-bold" style="color:${col}">${catLabel}</td></tr>`;
+
+    seen.forEach(item => {
+      const vals = MONTHS.map((_,i) => (itemsForCat(rawData.life,i,catLabel)[item])||0);
+      const ann = vals.reduce((a,b)=>a+b,0);
+      if(ann === 0) return;
+      rows += `<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/20">
+        <td class="py-1.5 px-3 text-xs sticky left-0 bg-white dark:bg-gray-800 z-10"><span class="inline-block w-2 h-2 rounded-sm mr-1.5" style="background:${col}"></span>${item}</td>
+        ${vals.map(v=>`<td class="${tdBase} text-gray-600 dark:text-gray-400">${v>0?fmt(v):'—'}</td>`).join('')}
+        <td class="${tdBase} font-medium">${fmt(ann)}</td></tr>`;
+    });
+
+    const catVals = MONTHS.map((_,i) => lifeInvCatTotal(i,ck));
+    const catAnn = catVals.reduce((a,b)=>a+b,0);
+    rows += `<tr class="bg-gray-50 dark:bg-gray-700/40 font-medium border-t border-gray-200 dark:border-gray-600">
+      <td class="py-1.5 px-3 text-xs sticky left-0 bg-gray-50 dark:bg-gray-700/40 z-10">${catLabel} 小計</td>
+      ${catVals.map(v=>`<td class="${tdBase} font-medium">${v>0?fmt(v):'—'}</td>`).join('')}
+      <td class="${tdBase} font-bold">${fmt(catAnn)}</td></tr>`;
+  });
+
+  const totals = MONTHS.map((_,i)=>lifeInvest(i));
+  const grandTotal = totals.reduce((a,b)=>a+b,0);
+  rows += `<tr class="bg-gray-100 dark:bg-gray-600/50 border-t-2 border-gray-300 dark:border-gray-500 font-bold">
+    <td class="py-2 px-3 text-xs sticky left-0 bg-gray-100 dark:bg-gray-600/50 z-10">合計</td>
+    ${totals.map(v=>`<td class="${tdBase} font-bold">${v>0?fmt(v):'—'}</td>`).join('')}
+    <td class="${tdBase} font-bold text-emerald-600">${fmt(grandTotal)}</td></tr>`;
+
+  return `<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
+    <div class="flex items-center justify-between p-4 pb-2">
+      <div class="text-sm font-medium">投資・貯金 月別一覧（${state.year}年）</div>
+      <div class="text-sm">投資 年間累計: <span class="font-bold tabular text-emerald-600">${fmt(sum12(i=>lifeInvCatTotal(i,'invest')))}</span></div>
+    </div>
+    <table class="w-full text-sm border-collapse">
+      <thead><tr class="bg-gray-50 dark:bg-gray-700/50">${header}</tr></thead>
+      <tbody>${rows||'<tr><td colspan="14" class="py-8 text-center text-gray-400 text-sm">投資・貯金データがありません</td></tr>'}</tbody>
+    </table>
+  </div>`;
 }
 
 function lifeAverageHTML() {
