@@ -359,9 +359,15 @@ function bizExpenseAllHTML() {
 }
 
 function bizAverageHTML() {
-  const mwd=Array.from({length:12},(_,i)=>bizSales(i)>0||bizExpense(i)>0?1:0).reduce((a,b)=>a+b,0);
-  const n=mwd||1,aS=sum12(bizSales)/n,aE=sum12(bizExpense)/n,aP=aS-aE,aR=aS>0?aP/aS:0;
-  return `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${kpiCard('月平均売上',fmt(aS),'')}${kpiCard('月平均経費',fmt(aE),'')}${kpiCard('月平均利益',fmt(aP),'',aP>=0?'text-emerald-600':'text-red-500')}${kpiCard('平均利益率',fmtPct(aR),`<span class="text-xs text-gray-500">対象: ${mwd}ヶ月</span>`)}</div>`;
+  const curYear = new Date().getFullYear(), curMonth = new Date().getMonth();
+  const maxMi = state.year === curYear ? curMonth - 1 : 11;
+  const months = Array.from({length: maxMi + 1}, (_, i) => i);
+  const mwd = months.filter(i => bizSales(i) > 0 || bizExpense(i) > 0).length;
+  const totalS = months.reduce((s,i)=>s+bizSales(i),0);
+  const totalE = months.reduce((s,i)=>s+bizExpense(i),0);
+  const n = mwd||1, aS=totalS/n, aE=totalE/n, aP=aS-aE, aR=aS>0?aP/aS:0;
+  const label = state.year === curYear ? `1月〜${curMonth}月` : '1月〜12月';
+  return `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${kpiCard('月平均売上',fmt(aS),'')}${kpiCard('月平均経費',fmt(aE),'')}${kpiCard('月平均利益',fmt(aP),'',aP>=0?'text-emerald-600':'text-red-500')}${kpiCard('平均利益率',fmtPct(aR),`<span class="text-xs text-gray-500">対象: ${label}（${mwd}ヶ月）</span>`)}</div>`;
 }
 
 // ======== LIFE ========
@@ -542,9 +548,15 @@ function lifeInvestAllHTML() {
 }
 
 function lifeAverageHTML() {
-  const mwd=Array.from({length:12},(_,i)=>lifeIncome(i)>0||lifeExpense(i)>0?1:0).reduce((a,b)=>a+b,0);
-  const n=mwd||1,aI=sum12(lifeIncome)/n,aE=sum12(lifeExpense)/n,aB=aI-aE;
-  return `<div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">${kpiCard('月平均収入',fmt(aI),'')}${kpiCard('月平均支出',fmt(aE),'')}${kpiCard('月平均収支',fmt(aB),`<span class="text-xs text-gray-500">対象: ${mwd}ヶ月</span>`,aB>=0?'text-emerald-600':'text-red-500')}</div>`;
+  const curYear = new Date().getFullYear(), curMonth = new Date().getMonth();
+  const maxMi = state.year === curYear ? curMonth - 1 : 11;
+  const months = Array.from({length: maxMi + 1}, (_, i) => i);
+  const mwd = months.filter(i => lifeIncome(i) > 0 || lifeExpense(i) > 0).length;
+  const totalI = months.reduce((s,i)=>s+lifeIncome(i),0);
+  const totalE = months.reduce((s,i)=>s+lifeExpense(i),0);
+  const n=mwd||1, aI=totalI/n, aE=totalE/n, aB=aI-aE;
+  const label = state.year === curYear ? `1月〜${curMonth}月` : '1月〜12月';
+  return `<div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">${kpiCard('月平均収入',fmt(aI),'')}${kpiCard('月平均支出',fmt(aE),'')}${kpiCard('月平均収支',fmt(aB),`<span class="text-xs text-gray-500">対象: ${label}（${mwd}ヶ月）</span>`,aB>=0?'text-emerald-600':'text-red-500')}</div>`;
 }
 
 // ======== SPECIAL ========
