@@ -40,6 +40,7 @@ body { font-family: 'Noto Sans JP', sans-serif; }
     <button onclick="switchMode('life')" id="modeBtn_life" class="mode-btn px-5 py-2 rounded-lg text-sm font-bold transition">🏠 生活管理</button>
     <button onclick="switchMode('special')" id="modeBtn_special" class="mode-btn px-5 py-2 rounded-lg text-sm font-bold transition">📝 特別費</button>
     <button onclick="switchMode('yearly')" id="modeBtn_yearly" class="mode-btn px-5 py-2 rounded-lg text-sm font-bold transition">📈 年度比較</button>
+    <button onclick="switchMode('plan')" id="modeBtn_plan" class="mode-btn px-5 py-2 rounded-lg text-sm font-bold transition">📅 ライフプラン</button>
   </div>
 
   <div id="kpiCards" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
@@ -74,7 +75,7 @@ const SPECIAL_TAGS = ['自分のお金で支払ったもの','旅行','特別費
 let GAS_URL = localStorage.getItem('gas_url') || '';
 const _now = new Date();
 let state = { year: 2026, month: 0, tab: 'overview', mode: 'biz', periodFrom: 0, periodTo: _now.getMonth() };
-let rawData = { biz: [], life: [], special: [] };
+let rawData = { biz: [], life: [], special: [], assets: [], lifeEvents: [], forecast: [] };
 let charts = {};
 
 function fmt(v) { return '¥' + Math.round(v).toLocaleString(); }
@@ -181,7 +182,7 @@ function render() {
 
   document.querySelectorAll('.mode-btn').forEach(b => {
     const id=b.id.replace('modeBtn_',''), active=id===state.mode;
-    const ac=id==='biz'?'bg-blue-600 text-white':id==='life'?'bg-emerald-600 text-white':id==='yearly'?'bg-purple-600 text-white':'bg-amber-600 text-white';
+    const ac=id==='biz'?'bg-blue-600 text-white':id==='life'?'bg-emerald-600 text-white':id==='yearly'?'bg-purple-600 text-white':id==='plan'?'bg-teal-600 text-white':'bg-amber-600 text-white';
     b.className=`mode-btn px-5 py-2 rounded-lg text-sm font-bold transition ${active?ac:'bg-white dark:bg-gray-800 text-gray-500 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}`;
   });
 
@@ -189,6 +190,7 @@ function render() {
   else if (state.mode==='life') renderLife(m);
   else if (state.mode==='special') renderSpecial();
   else if (state.mode==='yearly') renderYearly();
+  else if (state.mode==='plan') renderLifePlan();
 }
 
 // ======== BIZ ========
@@ -942,6 +944,147 @@ function renderYearly() {
         x:{ ticks:{autoSkip:false,font:{size:11},color:cc.tick}, grid:{display:false} },
         y:{ ticks:{callback:v=>fmtMan(v),font:{size:11},color:cc.tick}, grid:{color:cc.grid} }
       }
+    }
+  });
+}
+
+// ======== LIFE PLAN ========
+function renderLifePlan() {
+  document.getElementById('tabBar').innerHTML = '';
+  document.getElementById('headerTitle').textContent = 'ライフプランニング';
+
+  const assets = rawData.assets || [];
+  const events = (rawData.lifeEvents || []).sort((a,b)=>a.year-b.year);
+  const forecasts = rawData.forecast || [];
+
+  // 最新資産レコードを取得
+  const sortedAssets = [...assets].sort((a,b)=>a.yearMonth>b.yearMonth?1:-1);
+  const latest = sortedAssets.length ? sortedAssets[sortedAssets.length-1] : null;
+  const latestNet = latest ? latest.deposit + latest.invest + latest.other - latest.debt : 0;
+  const latestLabel = latest ? latest.yearMonth : '—';
+
+  // KPIカード
+  document.getElementById('kpiCards').innerHTML = latest
+    ? kpiCard('純資産合計',fmt(latestNet),`<span class="text-xs text-gray-400">${latestLabel} 時点</span>`,latestNet>=0?'text-emerald-600':'text-red-500')
+    + kpiCard('預金',fmt(latest.deposit),'')
+    + kpiCard('投資評価額',fmt(latest.invest),'text-blue-600')
+    + kpiCard('負債',fmt(latest.debt),'',latest.debt>0?'text-red-500':'')
+    : kpiCard('資産データなし','—','スプレッドシートの「資産」シートに入力してください');
+
+  // 過去実績の年間純収支を計算（事業利益＋生活収支）
+  const actualYears = new Set();
+  rawData.biz.forEach(r=>{ if(r.year) actualYears.add(Number(r.year)); });
+  rawData.life.forEach(r=>{ if(r.year) actualYears.add(Number(r.year)); });
+  function yearNet(y) {
+    const bizS = rawData.biz.filter(r=>Number(r.year)===y&&BIZ_CAT_MAP[r.category]==='sales').reduce((s,r)=>s+r.amount,0);
+    const bizE = rawData.biz.filter(r=>Number(r.year)===y&&['fixed','variable','other','biz'].includes(BIZ_CAT_MAP[r.category])).reduce((s,r)=>s+r.amount,0);
+    const lifeI = rawData.life.filter(r=>Number(r.year)===y&&LIFE_INC_CATS[r.category]).reduce((s,r)=>s+r.amount,0);
+    const lifeE = rawData.life.filter(r=>Number(r.year)===y&&LIFE_EXP_CATS[r.category]).reduce((s,r)=>s+r.amount,0);
+    return (bizS-bizE)+(lifeI-lifeE);
+  }
+  const actualArr = Array.from(actualYears).sort();
+  const avgNet = actualArr.length ? Math.round(actualArr.reduce((s,y)=>s+yearNet(y),0)/actualArr.length) : 0;
+
+  // シミュレーション（現在〜30年後）
+  const curYear = new Date().getFullYear();
+  const simYears = Array.from({length:31},(_,i)=>curYear+i);
+  const fcMap = {};
+  forecasts.forEach(f=>{ fcMap[f.year]=f.netIncome; });
+  const evMap = {};
+  events.forEach(ev=>{ evMap[ev.year]=(evMap[ev.year]||[]).concat(ev); });
+
+  let runningNet = latestNet;
+  const simRows = [];
+  const chartLabels=[], chartActual=[], chartForecast=[];
+
+  // 過去実績（資産推移）
+  sortedAssets.forEach(a=>{
+    const y = Number(a.yearMonth.slice(0,4));
+    const net = a.deposit+a.invest+a.other-a.debt;
+    if(!chartLabels.includes(String(y))) { chartLabels.push(String(y)); chartActual.push(net); chartForecast.push(null); }
+  });
+
+  simYears.forEach(y=>{
+    const netFlow = fcMap[y] !== undefined ? fcMap[y] : avgNet;
+    const evList = evMap[y] || [];
+    const evTotal = evList.reduce((s,e)=>s+e.amount,0);
+    const change = netFlow - evTotal;
+    runningNet += change;
+    simRows.push({y, netFlow, evList, evTotal, change, balance: runningNet});
+    if(!chartLabels.includes(String(y))) chartLabels.push(String(y));
+    chartForecast.push(runningNet);
+  });
+
+  // ライフイベント一覧
+  const futureEvents = events.filter(e=>e.year>=curYear);
+  const eventRows = futureEvents.map(e=>`<tr class="border-t border-gray-100 dark:border-gray-700">
+    <td class="py-2 px-3 text-sm">${e.year}年</td>
+    <td class="py-2 px-3 text-sm font-medium">${e.name}</td>
+    <td class="py-2 px-3 text-right text-sm tabular text-red-500">▼ ${fmt(e.amount)}</td>
+    <td class="py-2 px-3 text-sm text-gray-400">${e.memo||''}</td>
+  </tr>`).join('') || '<tr><td colspan="4" class="py-6 text-center text-xs text-gray-400">「ライフイベント」シートに登録してください</td></tr>';
+
+  // 将来予測テーブル
+  const simTableRows = simRows.map(r=>{
+    const isFc = fcMap[r.y]!==undefined;
+    return `<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/20">
+      <td class="py-2 px-3 text-sm font-medium">${r.y}年</td>
+      <td class="py-2 px-3 text-right text-sm tabular ${r.netFlow>=0?'text-emerald-600':'text-red-500'}">${fmt(r.netFlow)}${!isFc?'<span class="text-xs text-gray-400 ml-1">*</span>':''}</td>
+      <td class="py-2 px-3 text-sm">${r.evList.map(e=>`<span class="text-xs text-red-400">▼${e.name} ${fmt(e.amount)}</span>`).join(' ')}</td>
+      <td class="py-2 px-3 text-right text-sm tabular font-bold ${r.balance>=0?'text-emerald-600':'text-red-500'}">${fmt(r.balance)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
+      <div class="text-sm font-medium mb-1">資産推移シミュレーション</div>
+      <div class="text-xs text-gray-400 mb-3">実線=実績資産残高 / 点線=シミュレーション（* 印は実績平均 ${fmt(avgNet)}/年 を使用）</div>
+      <div class="relative h-72"><canvas id="planChart"></canvas></div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="text-sm font-medium p-4 pb-2">📅 ライフイベント（予定支出）</div>
+        <table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50">
+          <th class="py-2 px-3 text-left text-xs text-gray-500">年</th>
+          <th class="py-2 px-3 text-left text-xs text-gray-500">イベント</th>
+          <th class="py-2 px-3 text-right text-xs text-gray-500">金額</th>
+          <th class="py-2 px-3 text-left text-xs text-gray-500">メモ</th>
+        </tr></thead><tbody>${eventRows}</tbody></table>
+      </div>
+      <div class="bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-200 dark:border-teal-700 p-4">
+        <div class="text-sm font-bold text-teal-800 dark:text-teal-300 mb-2">📝 スプレッドシートへの入力方法</div>
+        <ul class="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+          <li>📊 <strong>資産シート</strong>: マネーフォワードMEの月末残高を毎月入力<br><span class="text-gray-400">例: 2026-06 | 預金150万 | 投資80万 | その他0 | 負債30万</span></li>
+          <li>📅 <strong>ライフイベントシート</strong>: 将来の大きな支出を登録<br><span class="text-gray-400">例: 2028 | 子供大学入学 | 500000 | 入学金</span></li>
+          <li>📈 <strong>将来予測シート</strong>: 年間の想定純収支を入力<br><span class="text-gray-400">例: 2027 | 1200000 | 売上維持想定</span><br><span class="text-gray-400">※ 未入力の年は実績平均 ${fmt(avgNet)}/年 で計算</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <div class="text-sm font-medium p-4 pb-2">将来シミュレーション（${curYear}〜${curYear+30}年）</div>
+      <table class="w-full min-w-[500px]"><thead><tr class="bg-gray-50 dark:bg-gray-700/50">
+        <th class="py-2 px-3 text-left text-xs text-gray-500">年</th>
+        <th class="py-2 px-3 text-right text-xs text-gray-500">年間純収支</th>
+        <th class="py-2 px-3 text-left text-xs text-gray-500">ライフイベント</th>
+        <th class="py-2 px-3 text-right text-xs text-gray-500">資産残高（推計）</th>
+      </tr></thead><tbody>${simTableRows}</tbody></table>
+    </div>`;
+
+  // グラフ描画
+  const cc = chartColors();
+  const actualFull = chartLabels.map(l=>{ const a=sortedAssets.find(x=>x.yearMonth.startsWith(l)); return a?a.deposit+a.invest+a.other-a.debt:null; });
+  const forecastFull = chartLabels.map((l,i)=>{ const r=simRows.find(x=>String(x.y)===l); return r?r.balance:null; });
+  const evYears = new Set(futureEvents.map(e=>String(e.year)));
+
+  makeChart('planChart',{
+    type:'line',
+    data:{labels:chartLabels, datasets:[
+      {label:'実績純資産',data:actualFull,borderColor:'#3266ad',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#3266ad',fill:false,tension:0.3,spanGaps:false},
+      {label:'推計残高',data:forecastFull,borderColor:'#1D9E75',borderWidth:2,borderDash:[6,3],pointRadius:chartLabels.map(l=>evYears.has(l)?7:3),pointBackgroundColor:chartLabels.map(l=>evYears.has(l)?'#E24B4A':'#1D9E75'),pointStyle:chartLabels.map(l=>evYears.has(l)?'triangle':'circle'),fill:false,tension:0.3,spanGaps:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:11},color:cc.tick}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.raw)}`}}},
+      scales:{x:{ticks:{font:{size:10},color:cc.tick},grid:{display:false}},y:{ticks:{callback:v=>fmtMan(v),font:{size:11},color:cc.tick},grid:{color:cc.grid}}}
     }
   });
 }
