@@ -660,8 +660,12 @@ function renderYearly() {
     const lExp=psum(ly2,['固定費','変動費','その他経費','事業経費'],rawData.biz), pExp=py2?psum(py2,['固定費','変動費','その他経費','事業経費'],rawData.biz):0;
     const lProfit=lSales-lExp, pProfit=pSales-pExp;
     const lInvest=psum(ly2,['投資'],rawData.life), pInvest=py2?psum(py2,['投資'],rawData.life):0;
+    const lLifeInc=psum(ly2,['収入:予算内','収入:予算外'],rawData.life), pLifeInc=py2?psum(py2,['収入:予算内','収入:予算外'],rawData.life):0;
     const lLifeExp=psum(ly2,['毎月固定費','毎月変動費','不定期固定費','不定期変動費'],rawData.life);
     const pLifeExp=py2?psum(py2,['毎月固定費','毎月変動費','不定期固定費','不定期変動費'],rawData.life):0;
+    const lLifeBal=lLifeInc-lLifeExp, pLifeBal=pLifeInc-pLifeExp;
+    // 総合収支 = 事業利益 + 生活収支
+    const lTotalBal=lProfit+lLifeBal, pTotalBal=pProfit+pLifeBal;
 
     function yPct(cur,prev){return prev?((cur-prev)/Math.abs(prev)*100):null;}
     function pctBadge(v,invert){
@@ -693,7 +697,7 @@ function renderYearly() {
     const allRanked=[...itemChanges].sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
 
     // 変動サマリーカード
-    const salesPct=yPct(lSales,pSales), expPct=yPct(lExp,pExp), profitPct=yPct(lProfit,pProfit), investPct=yPct(lInvest,pInvest), lifeExpPct=yPct(lLifeExp,pLifeExp);
+    const salesPct=yPct(lSales,pSales), expPct=yPct(lExp,pExp), profitPct=yPct(lProfit,pProfit), investPct=yPct(lInvest,pInvest), lifeExpPct=yPct(lLifeExp,pLifeExp), totalBalPct=yPct(lTotalBal,pTotalBal);
 
     const metrics=[
       {label:'売上高',lv:lSales,pv:pSales,p:salesPct,inv:false},
@@ -767,6 +771,26 @@ function renderYearly() {
           ${py2?`<span class="text-xs text-gray-400 ml-1">（${py2}年 vs ${ly2}年）</span>`:''}
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">${metricCards}</div>
+      </div>
+      <div class="rounded-xl border-2 ${lTotalBal>=0?'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20':'border-red-400 bg-red-50 dark:bg-red-900/20'} p-5 mb-4">
+        <div class="text-sm font-bold mb-3 ${lTotalBal>=0?'text-emerald-800 dark:text-emerald-300':'text-red-800 dark:text-red-300'}">💰 総合収支（事業利益 ＋ 生活収支）</div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3">
+            <div class="text-xs text-gray-500 mb-1">事業 営業利益</div>
+            <div class="text-lg font-bold tabular ${lProfit>=0?'text-emerald-600':'text-red-500'}">${fmt(lProfit)}</div>
+          </div>
+          <div class="flex items-center justify-center text-2xl text-gray-400">＋</div>
+          <div class="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3">
+            <div class="text-xs text-gray-500 mb-1">生活 収支（収入－支出）</div>
+            <div class="text-lg font-bold tabular ${lLifeBal>=0?'text-emerald-600':'text-red-500'}">${fmt(lLifeBal)}</div>
+            <div class="text-xs text-gray-400 mt-1">収入 ${fmt(lLifeInc)} ／ 支出 ${fmt(lLifeExp)}</div>
+          </div>
+          <div class="bg-white/70 dark:bg-gray-800/50 rounded-lg p-3 border-2 ${lTotalBal>=0?'border-emerald-400':'border-red-400'}">
+            <div class="text-xs text-gray-500 mb-1">実質 総合収支</div>
+            <div class="text-2xl font-bold tabular ${lTotalBal>=0?'text-emerald-600':'text-red-500'}">${fmt(lTotalBal)}</div>
+            ${py2&&pTotalBal?`<div class="text-xs mt-1 ${totalBalPct>=0?'text-emerald-600':'text-red-500'}">${totalBalPct>=0?'↑':'↓'} ${Math.abs(totalBalPct).toFixed(1)}% 前年同期比</div>`:''}
+          </div>
+        </div>
       </div>
       ${improveTargets.length>0?`<div class="mb-4">
         <div class="text-sm font-bold mb-3">💡 改善ポイント TOP3（${periodLabel}・変動額上位）</div>
