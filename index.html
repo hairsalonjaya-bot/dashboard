@@ -1051,24 +1051,13 @@ function renderLifePlan() {
           <th class="py-2 px-3 text-left text-xs text-gray-500">メモ</th>
         </tr></thead><tbody>${eventRows}</tbody></table>
       </div>
-      <div class="space-y-3">
-        <div class="bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-200 dark:border-teal-700 p-4">
-          <div class="text-sm font-bold text-teal-800 dark:text-teal-300 mb-2">📝 スプレッドシートへの入力方法</div>
-          <ul class="text-xs space-y-2 text-gray-600 dark:text-gray-400">
-            <li>📊 <strong>資産シート</strong>: マネーフォワードMEの月末残高を毎月入力<br><span class="text-gray-400">例: 2026-06 | 預金150万 | 投資80万 | その他0 | 負債30万</span></li>
-            <li>📅 <strong>ライフイベントシート</strong>: 将来の大きな支出を登録<br><span class="text-gray-400">例: 2028 | 子供大学入学 | 500000 | 入学金</span></li>
-            <li>📈 <strong>将来予測シート</strong>: 年間の想定純収支を入力<br><span class="text-gray-400">例: 2027 | 1200000 | 売上維持想定</span><br><span class="text-gray-400">※ 未入力の年は実績平均 ${fmt(avgNet)}/年 で計算</span></li>
-          </ul>
-        </div>
-        <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-700 p-4">
-          <div class="text-sm font-bold text-purple-800 dark:text-purple-300 mb-1">📋 詳細シミュレーション</div>
-          <div class="text-xs text-gray-600 dark:text-gray-400 mb-3">年金・教育費・ローン完済・引退後の生活費まで含めた詳細なライフプランシミュレーションはこちら。ダッシュボードのデータを自動連携できます。</div>
-          <a href="file:///C:/Users/user/OneDrive/%E3%83%87%E3%82%B9%E3%82%AF%E3%83%88%E3%83%83%E3%83%97/claude/index.html" target="_blank"
-             class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors">
-            📅 詳細ライフプランを開く →
-          </a>
-          <div class="text-xs text-gray-400 mt-2">※ ダッシュボードをローカルで開いている場合のみ動作します</div>
-        </div>
+      <div class="bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-200 dark:border-teal-700 p-4">
+        <div class="text-sm font-bold text-teal-800 dark:text-teal-300 mb-2">📝 スプレッドシートへの入力方法</div>
+        <ul class="text-xs space-y-2 text-gray-600 dark:text-gray-400">
+          <li>📊 <strong>資産シート</strong>: マネーフォワードMEの月末残高を毎月入力<br><span class="text-gray-400">例: 2026-06 | 預金150万 | 投資80万 | その他0 | 負債30万</span></li>
+          <li>📅 <strong>ライフイベントシート</strong>: 将来の大きな支出を登録<br><span class="text-gray-400">例: 2028 | 子供大学入学 | 500000 | 入学金</span></li>
+          <li>📈 <strong>将来予測シート</strong>: 年間の想定純収支を入力<br><span class="text-gray-400">例: 2027 | 1200000 | 売上維持想定</span><br><span class="text-gray-400">※ 未入力の年は実績平均 ${fmt(avgNet)}/年 で計算</span></li>
+        </ul>
       </div>
     </div>
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
