@@ -16,30 +16,45 @@ body { font-family: 'Noto Sans JP', sans-serif; }
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
 
-<div id="app" class="max-w-6xl mx-auto px-4 py-6">
+<div id="app" class="max-w-6xl mx-auto px-3 py-3 md:px-4 md:py-6">
 
-  <header class="flex flex-wrap items-center justify-between gap-4 mb-4">
-    <h1 class="text-xl font-bold flex items-center gap-2">
-      <span class="text-2xl">📊</span> <span id="headerTitle">管理ダッシュボード</span>
-    </h1>
-    <div class="flex items-center gap-3">
-      <select id="yearSelect" class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm"></select>
-      <div class="flex items-center gap-2">
+  <header class="mb-3">
+    <!-- 行1: タイトル + ユーティリティボタン -->
+    <div class="flex items-center justify-between mb-2">
+      <h1 class="text-lg md:text-xl font-bold flex items-center gap-2">
+        <span class="text-xl md:text-2xl">📊</span> <span id="headerTitle">管理ダッシュボード</span>
+      </h1>
+      <div class="flex items-center gap-1.5">
+        <button onclick="loadFromCloud()" id="syncBtn" class="h-8 px-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-xs md:text-sm"><span>🔄</span><span class="hidden sm:inline">読込</span></button>
+        <button onclick="setupGasUrl()" class="w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm">⚙️</button>
+        <button onclick="toggleDark()" class="w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm">🌓</button>
+      </div>
+    </div>
+    <!-- 行2: 年・月ナビ -->
+    <div class="flex items-center gap-2">
+      <select id="yearSelect" class="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"></select>
+      <div class="flex items-center gap-1.5">
         <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition">◀</button>
         <span id="monthLabel" class="text-sm font-medium min-w-[3rem] text-center"></span>
         <button onclick="changeMonth(1)" class="w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition">▶</button>
       </div>
-      <button onclick="loadFromCloud()" id="syncBtn" class="h-8 px-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm">🔄 読込</button>
-      <button onclick="setupGasUrl()" class="h-8 px-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm">⚙️</button>
-      <button onclick="toggleDark()" class="w-8 h-8 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm">🌓</button>
     </div>
   </header>
 
-  <div class="flex gap-1 mb-4">
-    <button onclick="switchMode('biz')" id="modeBtn_biz" class="mode-btn px-5 py-2 rounded-lg text-sm font-bold transition">💼 事業管理</button>
-    <button onclick="switchMode('life')" id="modeBtn_life" class="mode-btn px-5 py-2 rounded-lg text-sm font-bold transition">🏠 生活管理</button>
-    <button onclick="switchMode('special')" id="modeBtn_special" class="mode-btn px-5 py-2 rounded-lg text-sm font-bold transition">📝 特別費</button>
-    <button onclick="switchMode('yearly')" id="modeBtn_yearly" class="mode-btn px-5 py-2 rounded-lg text-sm font-bold transition">📈 年度比較</button>
+  <!-- モードタブ: スマホ2×2グリッド / PC横並び -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+    <button onclick="switchMode('biz')" id="modeBtn_biz" class="mode-btn py-2.5 rounded-xl text-sm font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1">
+      <span class="text-lg sm:text-base">💼</span><span>事業管理</span>
+    </button>
+    <button onclick="switchMode('life')" id="modeBtn_life" class="mode-btn py-2.5 rounded-xl text-sm font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1">
+      <span class="text-lg sm:text-base">🏠</span><span>生活管理</span>
+    </button>
+    <button onclick="switchMode('special')" id="modeBtn_special" class="mode-btn py-2.5 rounded-xl text-sm font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1">
+      <span class="text-lg sm:text-base">📝</span><span>特別費</span>
+    </button>
+    <button onclick="switchMode('yearly')" id="modeBtn_yearly" class="mode-btn py-2.5 rounded-xl text-sm font-bold transition flex flex-col sm:flex-row items-center justify-center gap-1">
+      <span class="text-lg sm:text-base">📈</span><span>年度比較</span>
+    </button>
   </div>
 
   <div id="kpiCards" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"></div>
@@ -73,8 +88,8 @@ const SPECIAL_TAGS = ['自分のお金で支払ったもの','旅行','特別費
 
 let GAS_URL = localStorage.getItem('gas_url') || '';
 const _now = new Date();
-let state = { year: 2026, month: 0, tab: 'overview', mode: 'biz', periodFrom: 0, periodTo: _now.getMonth() };
-let rawData = { biz: [], life: [], special: [] };
+let state = { year: 2026, month: 0, tab: 'overview', mode: 'biz', periodFrom: 0, periodTo: _now.getMonth(), bizPFrom: 0, bizPTo: _now.getMonth(), lifePFrom: 0, lifePTo: _now.getMonth() };
+let rawData = { biz: [], life: [], special: [], specialAllocation: [] };
 let charts = {};
 
 function fmt(v) { return '¥' + Math.round(v).toLocaleString(); }
@@ -108,6 +123,8 @@ function bizCatTotal(mi, catKey) { return bizByMonth(mi).filter(r=>BIZ_CAT_MAP[r
 function bizExpense(mi) { return ['fixed','variable','other','biz'].reduce((s,c)=>s+bizCatTotal(mi,c),0); }
 function bizProfit(mi) { return bizSales(mi)-bizExpense(mi); }
 function sum12(fn) { return Array.from({length:12},(_,i)=>fn(i)).reduce((a,b)=>a+b,0); }
+function sumRange(fn, from, to) { return Array.from({length:Math.max(0,to-from+1)},(_,i)=>from+i).reduce((s,mi)=>s+fn(mi),0); }
+function periodSelect(id, val) { return `<select id="${id}" onchange="state.${id}=Number(this.value);render()" class="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs px-2 py-1">${MONTHS.map((ml,i)=>`<option value="${i}" ${i===val?'selected':''}>${ml}</option>`).join('')}</select>`; }
 
 function lifeByMonth(mi) { return rawData.life.filter(r=>r.year===state.year && monthIdx(r.month)===mi); }
 function lifeIncome(mi) { return lifeByMonth(mi).filter(r=>LIFE_INC_CATS[r.category]).reduce((s,r)=>s+r.amount,0); }
@@ -247,7 +264,18 @@ function bizOverviewHTML(m) {
   const aS=sum12(bizSales),aF=sum12(i=>bizCatTotal(i,'fixed')),aV=sum12(bizExpense)-aF;
   const vr=aS>0?aV/aS:0,mr=1-vr,bep=mr>0?aF/mr:0,sf=aS>0?(aS-bep)/aS:0;
 
+  const rS=sumRange(bizSales,state.bizPFrom,state.bizPTo), rE=sumRange(bizExpense,state.bizPFrom,state.bizPTo), rP=rS-rE, rR=rS>0?rP/rS:0;
+
   return `
+  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <span class="text-sm font-medium">集計期間</span>
+      ${periodSelect('bizPFrom',state.bizPFrom)}<span class="text-xs text-gray-500">〜</span>${periodSelect('bizPTo',state.bizPTo)}
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      ${kpiCard('期間売上',fmt(rS),'')}${kpiCard('期間経費',fmt(rE),'')}${kpiCard('期間利益',fmt(rP),'',rP>=0?'text-emerald-600':'text-red-500')}${kpiCard('期間利益率',fmtPct(rR),'')}
+    </div>
+  </div>
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
     <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
       <div class="text-sm font-medium mb-2">月次推移</div>
@@ -426,7 +454,18 @@ function lifeOverviewHTML(m) {
   });
   const invAnnual=sum12(i=>lifeInvCatTotal(i,'invest'));
 
+  const rI=sumRange(lifeIncome,state.lifePFrom,state.lifePTo), rE2=sumRange(lifeExpense,state.lifePFrom,state.lifePTo), rB=rI-rE2;
+
   return `
+  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <span class="text-sm font-medium">集計期間</span>
+      ${periodSelect('lifePFrom',state.lifePFrom)}<span class="text-xs text-gray-500">〜</span>${periodSelect('lifePTo',state.lifePTo)}
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      ${kpiCard('期間収入',fmt(rI),'')}${kpiCard('期間支出',fmt(rE2),'')}${kpiCard('期間収支',fmt(rB),'',rB>=0?'text-emerald-600':'text-red-500')}
+    </div>
+  </div>
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
     <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
       <div class="text-sm font-medium mb-2">月次推移</div>
@@ -563,7 +602,7 @@ function lifeAverageHTML() {
 function renderSpecial() {
   document.getElementById('tabBar').innerHTML='';
   document.getElementById('kpiCards').innerHTML='';
-  const rows=(rawData.special||[]).filter(r=>r.year===state.year||!r.year);
+  const rows=(rawData.special||[]).filter(r=>r.date && Number(String(r.date).slice(0,4))===state.year);
   const tagTotals={};SPECIAL_TAGS.forEach(t=>tagTotals[t]=0);let gt=0;
   rows.forEach(r=>{const a=Number(r.amount)||0;gt+=a;if(r.tag&&tagTotals[r.tag]!==undefined)tagTotals[r.tag]+=a;});
 
@@ -582,9 +621,58 @@ function renderSpecial() {
     </tr>`;
   });
 
+  // === 年末精算（積立→支出→残高→配分） ===
+  const poolTotal = (rawData.life||[]).filter(r=>{
+    if (r.year!==state.year || (r.category!=='投資' && r.category!=='貯金')) return false;
+    const it = String(r.item||'').trim();
+    return it.indexOf('特別費')!==-1 || it.indexOf('児童手当')!==-1;
+  }).reduce((s,r)=>s+(Number(r.amount)||0),0);
+  const spentTotal = gt;
+  const balance = poolTotal - spentTotal;
+  const allocRows = (rawData.specialAllocation||[]).filter(r=>r.year===state.year);
+  const allocTotal = allocRows.reduce((s,r)=>s+(Number(r.amount)||0),0);
+  const diff = balance - allocTotal;
+
+  const settleKPIs = kpiCard('積立合計（特別費＋児童手当）',fmt(poolTotal),'')+kpiCard('支出合計',fmt(spentTotal),'')+
+    kpiCard('残高',fmt(balance),'',balance>=0?'text-emerald-600':'text-red-500')+
+    kpiCard('配分合計',fmt(allocTotal),'');
+
+  let allocTr='';
+  allocRows.forEach(r=>{
+    allocTr+=`<tr class="border-t border-gray-100 dark:border-gray-700">
+      <td class="py-2 px-3 text-sm">${r.dest||''}</td>
+      <td class="py-2 px-3 text-right text-sm tabular">${fmt(r.amount)}</td>
+      <td class="py-2 px-3 text-sm text-gray-500">${r.memo||''}</td>
+    </tr>`;
+  });
+
+  const diffNote = diff===0
+    ? `<span class="text-xs text-emerald-600 font-medium">✅ 過不足なし</span>`
+    : `<span class="text-xs ${diff>0?'text-amber-600':'text-red-500'} font-medium">${diff>0?`⚠️ 未配分 ${fmt(diff)}`:`⚠️ 配分超過 ${fmt(Math.abs(diff))}`}</span>`;
+
+  const settleHTML = `
+    <div class="mb-6">
+      <div class="text-sm font-bold mb-3">📋 年末精算（${state.year}年）</div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">${settleKPIs}</div>
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="flex items-center justify-between p-4 pb-2">
+          <div class="text-sm font-medium">配分実績</div>
+          ${diffNote}
+        </div>
+        <table class="w-full">
+          <thead><tr class="bg-gray-50 dark:bg-gray-700/50">
+            <th class="py-2 px-3 text-left text-xs font-medium text-gray-500">配分先</th>
+            <th class="py-2 px-3 text-right text-xs font-medium text-gray-500">金額</th>
+            <th class="py-2 px-3 text-left text-xs font-medium text-gray-500">メモ</th>
+          </tr></thead>
+          <tbody>${allocTr||'<tr><td colspan="3" class="py-6 text-center text-xs text-gray-400">スプレッドシートの「特別費精算」シートに入力してください</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+
   document.getElementById('mainContent').innerHTML=`
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">${sc}</div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto mb-6">
       <table class="w-full min-w-[600px]">
         <thead><tr class="bg-gray-50 dark:bg-gray-700/50">
           <th class="py-2 px-3 text-center text-xs font-medium text-gray-500 w-8">#</th>
@@ -596,7 +684,8 @@ function renderSpecial() {
         </tr></thead>
         <tbody>${tr2||'<tr><td colspan="6" class="py-8 text-center text-gray-400 text-sm">スプレッドシートの「特別費」シートにデータを入力してください</td></tr>'}</tbody>
       </table>
-    </div>`;
+    </div>
+    ${settleHTML}`;
 }
 
 // ======== YEARLY ========
@@ -718,30 +807,39 @@ function renderYearly() {
       </div>`;
     }).join('');
 
-    // 改善ポイント TOP3（増加経費を優先、なければ全体から）
+    // 改善ポイント TOP3（増加経費・悪化項目）
     const improveTargets = upItems.length>=3 ? upItems.slice(0,3) : [...upItems,...allRanked.filter(x=>x.pct<0)].slice(0,3);
+    // 好転TOP3（削減できた・減少した経費）
+    const goodTargets = downItems.slice(0,3);
     const rankMedal=['🥇','🥈','🥉'];
-    const improvementCards=improveTargets.map((it,i)=>{
-      const saving=it.diff; // 前年水準に戻せば削減できる金額
-      const isUp=it.pct>0;
-      const profitImpact=lSales>0?(saving/lSales*100).toFixed(1):null;
-      const advice=isUp
-        ?`前年比 <strong class="text-red-500">+${it.pct.toFixed(1)}%（${fmt(saving)}増）</strong>。前年水準に抑えれば <strong>${fmt(saving)}</strong> の削減が見込めます。${profitImpact?`利益率が約${profitImpact}pt改善する可能性があります。`:''}`
-        :`前年比 <strong class="text-emerald-600">${it.pct.toFixed(1)}%（${fmt(Math.abs(saving))}削減）</strong>の改善実績。引き続きこの水準を維持することが重要です。`;
-      return `<div class="bg-white dark:bg-gray-800 rounded-xl border-2 ${isUp?'border-red-200 dark:border-red-800':'border-emerald-200 dark:border-emerald-800'} p-4">
+
+    function makeImprovCard(it, i, isGoodSide) {
+      const diff = it.diff; // lv - pv
+      const isUp = it.pct > 0;
+      const profitImpact = lSales > 0 ? (Math.abs(diff)/lSales*100).toFixed(1) : null;
+      const advice = isUp
+        ? `前年比 <strong class="text-red-500">+${it.pct.toFixed(1)}%（${fmt(diff)}増）</strong>。前年水準に抑えれば <strong>${fmt(diff)}</strong> の削減が見込めます。${profitImpact?`利益率が約${profitImpact}pt改善する可能性があります。`:''}`
+        : `前年比 <strong class="text-emerald-600">${it.pct.toFixed(1)}%（${fmt(Math.abs(diff))}削減）</strong>の改善実績。引き続きこの水準を維持することが重要です。`;
+      const borderCls = isUp ? 'border-red-200 dark:border-red-800' : 'border-emerald-200 dark:border-emerald-800';
+      const badgeCls = isUp ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
+      const badgeLabel = isUp ? '要改善' : '良好維持';
+      return `<div class="bg-white dark:bg-gray-800 rounded-xl border-2 ${borderCls} p-4">
         <div class="flex items-start gap-3">
           <span class="text-2xl">${rankMedal[i]}</span>
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
               <span class="font-bold text-sm">${it.item}</span>
-              <span class="text-xs px-2 py-0.5 rounded-full ${isUp?'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300':'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'}">${isUp?'要改善':'良好維持'}</span>
+              <span class="text-xs px-2 py-0.5 rounded-full ${badgeCls}">${badgeLabel}</span>
             </div>
             <div class="text-xs text-gray-500 mb-2">${py2}年: ${fmt(it.pv)} → ${ly2}年: ${fmt(it.lv)}</div>
             <p class="text-xs leading-relaxed text-gray-600 dark:text-gray-400">${advice}</p>
           </div>
         </div>
       </div>`;
-    }).join('');
+    }
+
+    const improvementCards = improveTargets.map((it,i) => makeImprovCard(it,i,false)).join('');
+    const goodCards = goodTargets.map((it,i) => makeImprovCard(it,i,true)).join('');
 
     // 総評文
     const sentences=[];
@@ -816,8 +914,12 @@ function renderYearly() {
         </div>
       </div>
       ${improveTargets.length>0?`<div class="mb-4">
-        <div class="text-sm font-bold mb-3">💡 改善ポイント TOP3（${periodLabel}・変動額上位）</div>
+        <div class="text-sm font-bold mb-3">🔴 改善ポイント TOP3（${periodLabel}・増加額上位）</div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">${improvementCards}</div>
+      </div>`:''}
+      ${goodTargets.length>0?`<div class="mb-4">
+        <div class="text-sm font-bold mb-3">🟢 好転ポイント TOP3（${periodLabel}・削減額上位）</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">${goodCards}</div>
       </div>`:''}
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 mb-4">
         <div class="text-sm font-medium mb-3">📝 変動コメント（${periodLabel}）</div>
