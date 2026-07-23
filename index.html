@@ -87,7 +87,7 @@ const LIFE_INV_CATS = { '投資':'invest', '貯金':'saving' };
 const LIFE_EXP_COLORS = { monthly_fixed:'#EF9F27', monthly_var:'#3266ad', irreg_fixed:'#D85A30', irreg_var:'#7F77DD' };
 const LIFE_EXP_LABELS = { monthly_fixed:'毎月固定費', monthly_var:'毎月変動費', irreg_fixed:'不定期固定費', irreg_var:'不定期変動費' };
 
-const SPECIAL_TAGS = ['自分のお金で支払ったもの','旅行','特別費','教育','医療','冠婚葬祭','家電・家具','その他'];
+const SPECIAL_TAGS = ['毎年固定費','自分のお金で支払ったもの','旅行','特別費','教育','医療','冠婚葬祭','家電・家具','その他'];
 
 let GAS_URL = localStorage.getItem('gas_url') || '';
 const _now = new Date();
@@ -609,17 +609,28 @@ function renderSpecial() {
   const tagTotals={};SPECIAL_TAGS.forEach(t=>tagTotals[t]=0);let gt=0;
   rows.forEach(r=>{const a=Number(r.amount)||0;gt+=a;if(r.tag&&tagTotals[r.tag]!==undefined)tagTotals[r.tag]+=a;});
 
-  let sc=kpiCard('合計金額',fmt(gt),`<span class="text-xs text-gray-500">${rows.length}件</span>`);
-  SPECIAL_TAGS.forEach(t=>{if(tagTotals[t]>0)sc+=kpiCard(t,fmt(tagTotals[t]),'');});
+  const fixedTotal = tagTotals['毎年固定費'] || 0;
+  let sc = kpiCard('合計金額',fmt(gt),`<span class="text-xs text-gray-500">${rows.length}件</span>`);
+  if (fixedTotal > 0) sc += kpiCard('🔁 毎年固定費合計', fmt(fixedTotal), `<span class="text-xs text-blue-500">${rows.filter(r=>r.tag==='毎年固定費').length}件・毎年発生</span>`, 'text-blue-600 dark:text-blue-400');
+  SPECIAL_TAGS.forEach(t=>{if(t!=='毎年固定費' && tagTotals[t]>0)sc+=kpiCard(t,fmt(tagTotals[t]),'');});
 
   let tr2='';
   rows.forEach((r,i)=>{
-    tr2+=`<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+    const isFixed = r.tag === '毎年固定費';
+    const rowCls = isFixed
+      ? 'border-t border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-900/20 hover:bg-blue-100/60 dark:hover:bg-blue-900/30'
+      : 'border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30';
+    const tagBadge = r.tag
+      ? isFixed
+        ? `<span class="px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-medium">🔁 ${r.tag}</span>`
+        : `<span class="px-2 py-0.5 rounded text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">${r.tag}</span>`
+      : '';
+    tr2+=`<tr class="${rowCls}">
       <td class="py-2 px-3 text-center text-xs text-gray-400">${i+1}</td>
-      <td class="py-2 px-3 text-sm">${r.date||''}</td>
-      <td class="py-2 px-3 text-sm">${r.content||''}</td>
-      <td class="py-2 px-3 text-sm">${r.tag?`<span class="px-2 py-0.5 rounded text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">${r.tag}</span>`:''}</td>
-      <td class="py-2 px-3 text-right text-sm tabular">${r.amount?fmt(r.amount):''}</td>
+      <td class="py-2 px-3 text-sm${isFixed?' font-medium text-blue-700 dark:text-blue-300':''}">${r.date||''}</td>
+      <td class="py-2 px-3 text-sm${isFixed?' font-medium':''}">${r.content||''}</td>
+      <td class="py-2 px-3 text-sm">${tagBadge}</td>
+      <td class="py-2 px-3 text-right text-sm tabular${isFixed?' font-medium text-blue-700 dark:text-blue-300':''}">${r.amount?fmt(r.amount):''}</td>
       <td class="py-2 px-3 text-sm text-gray-500">${r.memo||''}</td>
     </tr>`;
   });
