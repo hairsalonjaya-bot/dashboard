@@ -877,7 +877,22 @@ function renderYearly() {
             ? `${periodLabel}は経費の増加が利益を圧迫しています。売上は${salesPct>=0?'伸びている':'横ばい'}ものの、コスト管理の強化が必要です。`
             : `${periodLabel}は一部に課題がありますが、改善の余地があります。以下の項目を重点的に見直しましょう。`;
 
-    // ② 改善効果が最も大きい項目（upItems上位3件・売上比インパクト付き）
+    // ② 経費増減バランス（全項目の+と－を並べてネット計算）
+    const totalUp   = upItems.reduce((s,x)=>s+x.diff,0);
+    const totalDown = downItems.reduce((s,x)=>s+x.diff,0); // 負の値
+    const netChange = totalUp + totalDown; // 正=経費増、負=経費削減
+    const balanceRows = [...itemChanges].sort((a,b)=>b.diff-a.diff).map(x=>{
+      const isUp = x.diff > 0;
+      return `<tr class="border-t border-gray-100 dark:border-gray-700">
+        <td class="py-1.5 px-3 text-xs">${x.item}</td>
+        <td class="py-1.5 px-3 text-right text-xs tabular text-gray-400">${fmt(x.pv)}</td>
+        <td class="py-1.5 px-3 text-right text-xs tabular">${fmt(x.lv)}</td>
+        <td class="py-1.5 px-3 text-right text-xs tabular font-bold ${isUp?'text-red-500':'text-emerald-600'}">${isUp?'+':''}${fmt(x.diff)}</td>
+        <td class="py-1.5 px-3 text-right text-xs ${isUp?'text-red-400':'text-emerald-500'}">${isUp?'+':''}${x.pct.toFixed(1)}%</td>
+      </tr>`;
+    }).join('');
+
+    // ③ 改善効果が最も大きい項目（upItems上位3件・売上比インパクト付き）
     const improveRows = upItems.slice(0,5).map(x=>{
       const salesImpact = lSales>0 ? (x.diff/lSales*100).toFixed(1) : null;
       const pctLabel = x.pct.toFixed(1);
@@ -997,6 +1012,46 @@ function renderYearly() {
             <span class="text-xl">${overallMark}</span>
             <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300">${overallSummary}</p>
           </div>
+
+          ${py2&&itemChanges.length>0?`<div>
+            <div class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-2">⚖️ 経費 増減バランス（全項目）</div>
+            <div class="grid grid-cols-3 gap-3 mb-3">
+              <div class="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-center">
+                <div class="text-xs text-red-500 mb-1">増加した経費 合計</div>
+                <div class="text-base font-bold text-red-600">+${fmt(totalUp)}</div>
+                <div class="text-xs text-gray-400">${upItems.length}項目</div>
+              </div>
+              <div class="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-3 text-center">
+                <div class="text-xs text-emerald-600 mb-1">削減できた経費 合計</div>
+                <div class="text-base font-bold text-emerald-600">${fmt(totalDown)}</div>
+                <div class="text-xs text-gray-400">${downItems.length}項目</div>
+              </div>
+              <div class="rounded-lg ${netChange<=0?'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800':'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'} border p-3 text-center">
+                <div class="text-xs ${netChange<=0?'text-emerald-600':'text-red-500'} mb-1">差引 ネット</div>
+                <div class="text-base font-bold ${netChange<=0?'text-emerald-600':'text-red-500'}">${netChange>0?'+':''}${fmt(netChange)}</div>
+                <div class="text-xs text-gray-400">${netChange<=0?'経費削減✅':'経費増加⚠️'}</div>
+              </div>
+            </div>
+            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+              <table class="w-full">
+                <thead><tr class="bg-gray-50 dark:bg-gray-700/50 text-xs text-gray-500">
+                  <th class="py-2 px-3 text-left">項目</th>
+                  <th class="py-2 px-3 text-right">${py2}年</th>
+                  <th class="py-2 px-3 text-right">${ly2}年</th>
+                  <th class="py-2 px-3 text-right">増減額</th>
+                  <th class="py-2 px-3 text-right">増減率</th>
+                </tr></thead>
+                <tbody>${balanceRows}</tbody>
+                <tfoot><tr class="border-t-2 border-gray-300 dark:border-gray-500 bg-gray-50 dark:bg-gray-700/50">
+                  <td class="py-2 px-3 text-xs font-bold">合計</td>
+                  <td class="py-2 px-3 text-right text-xs tabular font-bold">${fmt(itemChanges.reduce((s,x)=>s+x.pv,0))}</td>
+                  <td class="py-2 px-3 text-right text-xs tabular font-bold">${fmt(itemChanges.reduce((s,x)=>s+x.lv,0))}</td>
+                  <td class="py-2 px-3 text-right text-xs tabular font-bold ${netChange<=0?'text-emerald-600':'text-red-500'}">${netChange>0?'+':''}${fmt(netChange)}</td>
+                  <td></td>
+                </tr></tfoot>
+              </table>
+            </div>
+          </div>`:''}
 
           ${py2&&upItems.length>0?`<div>
             <div class="text-xs font-bold text-red-600 dark:text-red-400 mb-2">📈 削減すれば最も効果的な経費（増加額順）</div>
