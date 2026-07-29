@@ -855,20 +855,67 @@ function renderYearly() {
     const improvementCards = improveTargets.map((it,i) => makeImprovCard(it,i,false)).join('');
     const goodCards = goodTargets.map((it,i) => makeImprovCard(it,i,true)).join('');
 
-    // 総評文
+    // 変動コメント（数値ファクト）
     const sentences=[];
     if(py2){
       if(salesPct!==null) sentences.push(`売上高は${py2}年比<strong>${Math.abs(salesPct).toFixed(1)}%${salesPct>=0?'増加':'減少'}</strong>（${fmt(pSales)}→${fmt(lSales)}）。`);
       if(expPct!==null) sentences.push(`事業経費は${Math.abs(expPct).toFixed(1)}%${expPct>=0?'増加':'削減'}（${fmt(pExp)}→${fmt(lExp)}）。`);
       if(profitPct!==null&&pProfit!==0) sentences.push(`営業利益は<strong>${Math.abs(profitPct).toFixed(1)}%${profitPct>=0?'増加':'減少'}</strong>し${fmt(lProfit)}。`);
+      if(lifeExpPct!==null) sentences.push(`生活支出は${Math.abs(lifeExpPct).toFixed(1)}%${lifeExpPct>=0?'増加':'削減'}（${fmt(pLifeExp)}→${fmt(lLifeExp)}）。`);
     }
+
+    // ① 全体評価文
     const overallGood=(salesPct===null||salesPct>=0)&&(expPct===null||expPct<=0)&&(profitPct===null||profitPct>=0);
-    const improveSummary=upItems.length>0
-      ?`特に${upItems.slice(0,2).map(x=>x.item).join('・')}が増加しており、前年水準に戻すことで合計${fmt(upItems.slice(0,2).reduce((s,x)=>s+x.diff,0))}の削減余地があります。`
-      :'経費は全体的に前年比で良好に管理されています。';
-    const overallText=overallGood
-      ?`${periodLabel}の経営状況は良好です。${improveSummary}引き続き収益基盤の強化を目指しましょう。`
-      :`${improveSummary}${salesPct!==null&&salesPct<0?`売上は${Math.abs(salesPct).toFixed(1)}%減のため、集客・単価見直しも検討が必要です。`:''}`;
+    const overallMark = overallGood ? '✅' : '⚠️';
+    const overallSummary = !py2
+      ? `${periodLabel}の実績を記録しました。前年データが揃うと比較分析が可能になります。`
+      : overallGood
+        ? `${periodLabel}の経営状況は<strong>良好</strong>です。売上・利益ともに前年を上回っており、引き続き現状の運営を維持しましょう。`
+        : salesPct!==null&&salesPct<0&&profitPct!==null&&profitPct<0
+          ? `${periodLabel}は売上・利益ともに前年比マイナスで、<strong>要注意フェーズ</strong>です。経費の見直しと集客強化が急務です。`
+          : expPct!==null&&expPct>0&&profitPct!==null&&profitPct<0
+            ? `${periodLabel}は経費の増加が利益を圧迫しています。売上は${salesPct>=0?'伸びている':'横ばい'}ものの、コスト管理の強化が必要です。`
+            : `${periodLabel}は一部に課題がありますが、改善の余地があります。以下の項目を重点的に見直しましょう。`;
+
+    // ② 改善効果が最も大きい項目（upItems上位3件・売上比インパクト付き）
+    const improveRows = upItems.slice(0,5).map(x=>{
+      const salesImpact = lSales>0 ? (x.diff/lSales*100).toFixed(1) : null;
+      const pctLabel = x.pct.toFixed(1);
+      return `<tr class="border-t border-gray-100 dark:border-gray-700">
+        <td class="py-2 px-3 text-sm font-medium">${x.item}</td>
+        <td class="py-2 px-3 text-right text-sm tabular text-gray-500">${fmt(x.pv)}</td>
+        <td class="py-2 px-3 text-right text-sm tabular text-red-500 font-medium">${fmt(x.lv)}</td>
+        <td class="py-2 px-3 text-right text-sm tabular text-red-500">+${pctLabel}%</td>
+        <td class="py-2 px-3 text-right text-sm tabular font-bold text-red-600">+${fmt(x.diff)}</td>
+        ${salesImpact?`<td class="py-2 px-3 text-right text-xs text-gray-400">売上の${salesImpact}%</td>`:'<td></td>'}
+      </tr>`;
+    }).join('');
+
+    // ③ 無駄経費の疑い（前年比+30%超 かつ 増加額が一定以上）
+    const wasteThreshold = Math.max(10000, lSales*0.005); // 売上の0.5%か1万円の大きい方
+    const wasteItems = itemChanges.filter(x=>x.pct>30&&x.diff>wasteThreshold).sort((a,b)=>b.pct-a.pct);
+    const wasteRows = wasteItems.slice(0,5).map(x=>{
+      const reason = x.pct>100
+        ? '倍増以上の急増。単発コスト・重複契約の可能性あり'
+        : x.pct>50
+          ? '半年で大幅増加。内容・頻度の見直しを推奨'
+          : '前年比3割超の増加。必要性を確認してみましょう';
+      return `<tr class="border-t border-gray-100 dark:border-gray-700">
+        <td class="py-2 px-3 text-sm font-medium">${x.item}</td>
+        <td class="py-2 px-3 text-right text-sm tabular text-amber-600 font-bold">+${x.pct.toFixed(0)}%</td>
+        <td class="py-2 px-3 text-right text-sm tabular">+${fmt(x.diff)}</td>
+        <td class="py-2 px-3 text-xs text-gray-500">${reason}</td>
+      </tr>`;
+    }).join('');
+
+    // ④ アクションプラン
+    const actions=[];
+    if(salesPct!==null&&salesPct<0) actions.push(`<li class="flex gap-2 text-sm"><span class="text-red-500 font-bold mt-0.5">!</span><span><strong>集客・単価の見直し：</strong>売上が${Math.abs(salesPct).toFixed(1)}%減少しています。メニュー単価の引き上げやリピーター施策を検討しましょう。</span></li>`);
+    if(upItems.length>0) actions.push(`<li class="flex gap-2 text-sm"><span class="text-orange-500 font-bold mt-0.5">!</span><span><strong>${upItems[0].item}の削減：</strong>前年比+${upItems[0].pct.toFixed(1)}%（${fmt(upItems[0].diff)}増）。前年水準に戻せれば利益が${fmt(upItems[0].diff)}改善します。</span></li>`);
+    if(wasteItems.length>0) actions.push(`<li class="flex gap-2 text-sm"><span class="text-amber-500 font-bold mt-0.5">!</span><span><strong>要確認の経費：</strong>${wasteItems[0].item}が+${wasteItems[0].pct.toFixed(0)}%と急増。契約内容・利用頻度を確認してください。</span></li>`);
+    if(lLifeExp>lProfit*0.8) actions.push(`<li class="flex gap-2 text-sm"><span class="text-blue-500 font-bold mt-0.5">!</span><span><strong>生活費の最適化：</strong>生活支出（${fmt(lLifeExp)}）が事業利益に対して高い割合です。固定費の見直しで手元資金を増やせます。</span></li>`);
+    if(lProfit>0&&lInvest<lProfit*0.1) actions.push(`<li class="flex gap-2 text-sm"><span class="text-emerald-500 font-bold mt-0.5">✓</span><span><strong>投資の増額検討：</strong>利益（${fmt(lProfit)}）に対し投資額（${fmt(lInvest)}）が少なめです。余剰資金の積立・投資を増やすチャンスです。</span></li>`);
+    if(actions.length===0) actions.push(`<li class="flex gap-2 text-sm"><span class="text-emerald-500 font-bold mt-0.5">✓</span><span>現状の収支バランスは良好です。引き続き売上の安定化と経費の適正管理を続けましょう。</span></li>`);
 
     function monthSelect2(id, val) {
       return `<select id="${id}" onchange="state.${id}=Number(this.value);renderYearly()" class="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs px-2 py-1">${MONTHS.map((ml,i)=>`<option value="${i}" ${i===val?'selected':''}>${ml}</option>`).join('')}</select>`;
@@ -939,9 +986,57 @@ function renderYearly() {
         <div class="text-sm font-medium mb-3">📝 変動コメント（${periodLabel}）</div>
         <ul class="space-y-2">${sentences.map(s=>`<li class="text-sm leading-relaxed text-gray-700 dark:text-gray-300 flex gap-2"><span class="text-gray-400 mt-0.5">•</span><span>${s}</span></li>`).join('')}</ul>
       </div>
-      <div class="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border border-purple-200 dark:border-purple-700 p-5">
-        <div class="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2">【総評】${periodLabel}</div>
-        <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300">${overallText}</p>
+      <div class="rounded-xl border border-purple-200 dark:border-purple-700 overflow-hidden mb-4">
+        <div class="bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-3 flex items-center gap-2">
+          <span class="text-white font-bold text-sm">📋 総評・改善アドバイス</span>
+          <span class="text-purple-200 text-xs">${periodLabel}${py2?' （'+py2+'年→'+ly2+'年比較）':''}</span>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 space-y-5">
+
+          <div class="flex gap-3 p-3 rounded-lg ${overallGood?'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700':'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700'}">
+            <span class="text-xl">${overallMark}</span>
+            <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300">${overallSummary}</p>
+          </div>
+
+          ${py2&&upItems.length>0?`<div>
+            <div class="text-xs font-bold text-red-600 dark:text-red-400 mb-2">📈 削減すれば最も効果的な経費（増加額順）</div>
+            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+              <table class="w-full text-sm">
+                <thead><tr class="bg-gray-50 dark:bg-gray-700/50 text-xs text-gray-500">
+                  <th class="py-2 px-3 text-left">項目</th>
+                  <th class="py-2 px-3 text-right">${py2}年</th>
+                  <th class="py-2 px-3 text-right">${ly2}年</th>
+                  <th class="py-2 px-3 text-right">増減率</th>
+                  <th class="py-2 px-3 text-right">増加額</th>
+                  <th class="py-2 px-3 text-right">売上比</th>
+                </tr></thead>
+                <tbody>${improveRows}</tbody>
+              </table>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">※ これらを前年水準に戻すと合計 <strong class="text-red-500">${fmt(upItems.slice(0,5).reduce((s,x)=>s+x.diff,0))}</strong> の利益改善が見込めます</p>
+          </div>`:''}
+
+          ${py2&&wasteItems.length>0?`<div>
+            <div class="text-xs font-bold text-amber-600 dark:text-amber-400 mb-2">⚠️ 無駄経費の疑いがある項目（前年比+30%超）</div>
+            <div class="overflow-x-auto rounded-lg border border-amber-200 dark:border-amber-700">
+              <table class="w-full text-sm">
+                <thead><tr class="bg-amber-50 dark:bg-amber-900/20 text-xs text-amber-700 dark:text-amber-400">
+                  <th class="py-2 px-3 text-left">項目</th>
+                  <th class="py-2 px-3 text-right">増加率</th>
+                  <th class="py-2 px-3 text-right">増加額</th>
+                  <th class="py-2 px-3 text-left">チェックポイント</th>
+                </tr></thead>
+                <tbody>${wasteRows}</tbody>
+              </table>
+            </div>
+          </div>`:''}
+
+          <div>
+            <div class="text-xs font-bold text-blue-600 dark:text-blue-400 mb-2">🎯 アクションプラン</div>
+            <ul class="space-y-2">${actions.join('')}</ul>
+          </div>
+
+        </div>
       </div>`;
     return;
   }
