@@ -864,18 +864,48 @@ function renderYearly() {
       if(lifeExpPct!==null) sentences.push(`生活支出は${Math.abs(lifeExpPct).toFixed(1)}%${lifeExpPct>=0?'増加':'削減'}（${fmt(pLifeExp)}→${fmt(lLifeExp)}）。`);
     }
 
-    // ① 全体評価文
+    // ① 全体評価文（具体的数値入り）
     const overallGood=(salesPct===null||salesPct>=0)&&(expPct===null||expPct<=0)&&(profitPct===null||profitPct>=0);
     const overallMark = overallGood ? '✅' : '⚠️';
-    const overallSummary = !py2
-      ? `${periodLabel}の実績を記録しました。前年データが揃うと比較分析が可能になります。`
-      : overallGood
-        ? `${periodLabel}の経営状況は<strong>良好</strong>です。売上・利益ともに前年を上回っており、引き続き現状の運営を維持しましょう。`
-        : salesPct!==null&&salesPct<0&&profitPct!==null&&profitPct<0
-          ? `${periodLabel}は売上・利益ともに前年比マイナスで、<strong>要注意フェーズ</strong>です。経費の見直しと集客強化が急務です。`
-          : expPct!==null&&expPct>0&&profitPct!==null&&profitPct<0
-            ? `${periodLabel}は経費の増加が利益を圧迫しています。売上は${salesPct>=0?'伸びている':'横ばい'}ものの、コスト管理の強化が必要です。`
-            : `${periodLabel}は一部に課題がありますが、改善の余地があります。以下の項目を重点的に見直しましょう。`;
+    function buildSummary() {
+      if (!py2) return `${periodLabel}の実績を記録しました。前年データが揃うと比較分析が可能になります。`;
+      const parts = [];
+      // 売上
+      if (salesPct !== null) {
+        parts.push(salesPct >= 0
+          ? `売上は前年比 <strong class="text-emerald-600">+${salesPct.toFixed(1)}%（${fmt(lSales-pSales)}増）</strong> の ${fmt(lSales)} と好調です。`
+          : `売上は前年比 <strong class="text-red-500">${salesPct.toFixed(1)}%（${fmt(pSales-lSales)}減）</strong> の ${fmt(lSales)} に留まっています。`);
+      }
+      // 利益
+      if (profitPct !== null && pProfit !== 0) {
+        parts.push(profitPct >= 0
+          ? `営業利益は <strong class="text-emerald-600">${fmt(lProfit)}（前年比+${profitPct.toFixed(1)}%）</strong> と増益。`
+          : `営業利益は <strong class="text-red-500">${fmt(lProfit)}（前年比${profitPct.toFixed(1)}%）</strong> と減益。`);
+      }
+      // 経費ネット
+      // totalUp / totalDown はこの時点ではまだ未計算なので後続で計算した後にアクセスできないが、
+      // upItems/downItems は既にある
+      const tUp2   = upItems.reduce((s,x)=>s+x.diff,0);
+      const tDown2 = downItems.reduce((s,x)=>s+Math.abs(x.diff),0);
+      const net2   = tUp2 - tDown2;
+      if (upItems.length>0 || downItems.length>0) {
+        parts.push(net2 <= 0
+          ? `経費は増加項目（+${fmt(tUp2)}）より削減項目（-${fmt(tDown2)}）が上回り、<strong class="text-emerald-600">差引 ${fmt(Math.abs(net2))} の削減</strong>に成功しています。`
+          : `経費は削減項目（-${fmt(tDown2)}）を差し引いても、増加項目（+${fmt(tUp2)}）が上回っており、<strong class="text-red-500">差引 ${fmt(net2)} の経費増</strong>となっています。`);
+      }
+      // 最大の課題
+      if (upItems.length > 0) {
+        const top = upItems[0];
+        const impact = lSales > 0 ? `（売上の${(top.diff/lSales*100).toFixed(1)}%相当）` : '';
+        parts.push(`最も削減余地があるのは <strong>「${top.item}」</strong> で、前年比 +${top.pct.toFixed(1)}%・${fmt(top.diff)}の増加${impact}。前年水準に戻すだけで利益が${fmt(top.diff)}改善します。`);
+      }
+      if (downItems.length > 0) {
+        const best = downItems[0];
+        parts.push(`一方、<strong>「${best.item}」</strong> は ${fmt(Math.abs(best.diff))} の削減に成功（前年比${best.pct.toFixed(1)}%）。この調子で維持しましょう。`);
+      }
+      return parts.join('<br>');
+    }
+    const overallSummary = buildSummary();
 
     // ② 経費増減バランス（全項目の+と－を並べてネット計算）
     const totalUp   = upItems.reduce((s,x)=>s+x.diff,0);
