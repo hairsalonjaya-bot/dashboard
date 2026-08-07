@@ -971,7 +971,9 @@ function renderYearly() {
       const fLifeInc  = seasonalProj(lyIncM,   pyIncM);
       const fLifeExp  = seasonalProj(lyLExpM,  pyLExpM);
       const fLifeBal  = fLifeInc - fLifeExp;
-      const fInvest   = seasonalProj(lyInvM,   pyInvM);
+      // 投資は季節性を使わず今年の月平均でフラット外挿
+      const curInvRaw = mapSum(lyInvM);
+      const fInvest   = Math.round(curInvRaw + (curInvRaw/m)*remaining);
       const fTotal    = fProfit + fLifeBal;
 
       const curSales   = mapSum(lySalesM);
