@@ -907,20 +907,23 @@ function renderYearly() {
     }
     const overallSummary = buildSummary();
 
-    // ★ 年末予測（前年の季節パターンを使った補正外挿）
+    // ★ 年末予測（集計期間を基準・前年の季節パターンで補正）
     function yearForecast() {
       const lyr = Number(ly2);
       const pyr = py2 ? Number(py2) : null;
-      const bizL  = rawData.biz.filter(r=>Number(r.year)===lyr);
-      const lifeL = rawData.life.filter(r=>Number(r.year)===lyr);
+      // 集計期間内のデータのみを実績として使う
+      const periodMs = new Set(Array.from({length: pTo2-pFrom2+1}, (_,i)=>pFrom2+i));
+      const bizL  = rawData.biz.filter(r=>Number(r.year)===lyr && periodMs.has(monthIdx(r.month)));
+      const lifeL = rawData.life.filter(r=>Number(r.year)===lyr && periodMs.has(monthIdx(r.month)));
       const bizP  = pyr ? rawData.biz.filter(r=>Number(r.year)===pyr) : [];
       const lifeP = pyr ? rawData.life.filter(r=>Number(r.year)===pyr) : [];
 
       const lyMonths = new Set([...bizL,...lifeL].map(r=>monthIdx(r.month)));
       const m = lyMonths.size;
       if (m === 0) return null;
-      const remaining = Math.max(0, 12 - m);
-      const lastMonth = Math.max(...lyMonths) + 1;
+      // 集計期間の終了月（pTo2）以降を残り月とする
+      const remaining = Math.max(0, 11 - pTo2);
+      const lastMonth = pTo2 + 1; // 表示用（1始まり）
 
       // 月別集計
       function monthlyMap(data, cats) {
@@ -947,10 +950,10 @@ function renderYearly() {
         const lyAvg  = lyCur / m;
         // 前年→今年のスケール比
         const scale  = pyBase > 0 ? lyAvg / pyBase : 1;
-        // 残り月を前年の季節値 × スケールで補正
+        // 集計期間終了月の翌月〜12月を前年の季節値 × スケールで補正
         let add = 0;
-        for (let mi=0; mi<12; mi++) {
-          if (!lyMonths.has(mi)) add += (pyMap[mi]||0) * scale;
+        for (let mi=pTo2+1; mi<12; mi++) {
+          add += (pyMap[mi]||0) * scale;
         }
         return Math.round(lyCur + add);
       }
@@ -971,9 +974,9 @@ function renderYearly() {
       const fLifeInc  = seasonalProj(lyIncM,   pyIncM);
       const fLifeExp  = seasonalProj(lyLExpM,  pyLExpM);
       const fLifeBal  = fLifeInc - fLifeExp;
-      // 投資は季節性を使わず今年の月平均でフラット外挿
+      // 投資は季節性を使わず集計期間の月平均でフラット外挿
       const curInvRaw = mapSum(lyInvM);
-      const fInvest   = Math.round(curInvRaw + (curInvRaw/m)*remaining);
+      const fInvest   = m>0 ? Math.round(curInvRaw + (curInvRaw/m)*remaining) : 0;
       const fTotal    = fProfit + fLifeBal;
 
       const curSales   = mapSum(lySalesM);
