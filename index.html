@@ -907,6 +907,62 @@ function renderYearly() {
     }
     const overallSummary = buildSummary();
 
+    // ★ 年末予測（ly2の全データから月平均→12月末まで外挿）
+    function yearForecast() {
+      const yr = Number(ly2);
+      const bizAll  = rawData.biz.filter(r=>Number(r.year)===yr);
+      const lifeAll = rawData.life.filter(r=>Number(r.year)===yr);
+
+      // データが存在する月番号の一覧（0=1月…11=12月）
+      const bizMonths  = new Set(bizAll.map(r=>monthIdx(r.month)));
+      const lifeMonths = new Set(lifeAll.map(r=>monthIdx(r.month)));
+      const allMonths  = new Set([...bizMonths,...lifeMonths]);
+      const m = allMonths.size; // 実績月数
+      if (m === 0) return null;
+      const remaining = Math.max(0, 12 - m);
+      const lastMonth = Math.max(...allMonths) + 1; // 最終実績月（1始まり）
+
+      function bizSum(cats) { return bizAll.filter(r=>cats.includes(r.category)).reduce((s,r)=>s+r.amount,0); }
+      function lifeSum(cats){ return lifeAll.filter(r=>cats.includes(r.category)).reduce((s,r)=>s+r.amount,0); }
+
+      const curSales   = bizSum(['売上']);
+      const curExp     = bizSum(['固定費','変動費','その他経費','事業経費']);
+      const curProfit  = curSales - curExp;
+      const curLifeInc = lifeSum(['収入:予算内','収入:予算外']);
+      const curLifeExp = lifeSum(['毎月固定費','毎月変動費','不定期固定費','不定期変動費']);
+      const curLifeBal = curLifeInc - curLifeExp;
+      const curInvest  = lifeSum(['投資']);
+      const curTotal   = curProfit + curLifeBal;
+
+      function proj(cur) {
+        const avg = cur / m;
+        return Math.round(cur + avg * remaining);
+      }
+
+      const fSales  = proj(curSales);
+      const fExp    = proj(curExp);
+      const fProfit = fSales - fExp;
+      const fLifeInc= proj(curLifeInc);
+      const fLifeExp= proj(curLifeExp);
+      const fLifeBal= fLifeInc - fLifeExp;
+      const fInvest = proj(curInvest);
+      const fTotal  = fProfit + fLifeBal;
+
+      return { m, remaining, lastMonth, ly2,
+        rows:[
+          { label:'売上',     cur:curSales,   avg:Math.round(curSales/m),   proj:fSales,   good:true  },
+          { label:'事業経費', cur:curExp,     avg:Math.round(curExp/m),     proj:fExp,     good:false },
+          { label:'営業利益', cur:curProfit,  avg:Math.round(curProfit/m),  proj:fProfit,  good:true, bold:true },
+          { label:'生活収入', cur:curLifeInc, avg:Math.round(curLifeInc/m), proj:fLifeInc, good:true  },
+          { label:'生活支出', cur:curLifeExp, avg:Math.round(curLifeExp/m), proj:fLifeExp, good:false },
+          { label:'生活収支', cur:curLifeBal, avg:Math.round(curLifeBal/m), proj:fLifeBal, good:true, bold:true },
+          { label:'投資',     cur:curInvest,  avg:Math.round(curInvest/m),  proj:fInvest,  good:true  },
+          { label:'総合収支', cur:curTotal,   avg:Math.round(curTotal/m),   proj:fTotal,   good:true, bold:true, sep:true },
+        ]
+      };
+    }
+    const fc = yearForecast();
+
     // ② 経費増減バランス（全項目の+と－を並べてネット計算）
     const totalUp   = upItems.reduce((s,x)=>s+x.diff,0);
     const totalDown = downItems.reduce((s,x)=>s+x.diff,0); // 負の値
@@ -1114,6 +1170,33 @@ function renderYearly() {
                 <tbody>${wasteRows}</tbody>
               </table>
             </div>
+          </div>`:''}
+
+          ${fc?`<div>
+            <div class="text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-2">📅 ${fc.ly2}年 年末予測（${fc.m}ヶ月実績 → 残り${fc.remaining}ヶ月を月平均で外挿）</div>
+            <div class="overflow-x-auto rounded-lg border border-indigo-200 dark:border-indigo-700">
+              <table class="w-full text-sm">
+                <thead><tr class="bg-indigo-50 dark:bg-indigo-900/30 text-xs text-indigo-600 dark:text-indigo-300">
+                  <th class="py-2 px-3 text-left">項目</th>
+                  <th class="py-2 px-3 text-right">${fc.m}ヶ月実績</th>
+                  <th class="py-2 px-3 text-right">月平均</th>
+                  <th class="py-2 px-3 text-right font-bold">年末予測（12月）</th>
+                </tr></thead>
+                <tbody>
+                  ${fc.rows.map(r=>{
+                    const projColor = r.good ? (r.proj>=0?'text-emerald-600':'text-red-500') : (r.proj<=r.cur?'text-emerald-600':'text-red-500');
+                    const rowCls = r.sep ? 'border-t-2 border-indigo-300 dark:border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20' : 'border-t border-gray-100 dark:border-gray-700';
+                    return `<tr class="${rowCls}">
+                      <td class="py-2 px-3 text-xs ${r.bold?'font-bold':''}">${r.label}</td>
+                      <td class="py-2 px-3 text-right text-xs tabular text-gray-500">${fmt(r.cur)}</td>
+                      <td class="py-2 px-3 text-right text-xs tabular text-gray-400">${fmt(r.avg)}/月</td>
+                      <td class="py-2 px-3 text-right text-sm tabular font-bold ${projColor}">${fmt(r.proj)}</td>
+                    </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">※ ${fc.lastMonth}月までの実績データをもとに、同じペースが続いた場合の予測値です</p>
           </div>`:''}
 
           <div>
