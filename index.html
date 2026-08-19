@@ -1265,112 +1265,74 @@ function renderYearly() {
     document.getElementById('kpiCards').innerHTML = '';
     const cc = chartColors();
     const palette = YEAR_PALETTE;
-    const pFrom2 = state.periodFrom, pTo2 = state.periodTo;
-    const periodMis = Array.from({length: pTo2-pFrom2+1}, (_,i) => pFrom2+i);
-    const periodLabels = MONTHS.slice(pFrom2, pTo2+1);
 
-    function monthSelect2(id, val) {
-      return `<select id="${id}" onchange="state.${id}=Number(this.value);renderYearly()" class="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs px-2 py-1">${MONTHS.map((ml,i)=>`<option value="${i}" ${i===val?'selected':''}>${ml}</option>`).join('')}</select>`;
+    // 年間合計（全月）
+    function yrTotal(y, cats, sheet) {
+      return rawData[sheet].filter(r=>Number(r.year)===Number(y)&&cats.includes(r.category)).reduce((s,r)=>s+r.amount,0);
     }
+    const yLabels = years.map(y=>y+'年');
+    const salesData  = years.map(y=>yrTotal(y,['売上'],'biz'));
+    const expData    = years.map(y=>yrTotal(y,['固定費','変動費','その他経費','事業経費'],'biz'));
+    const profitData = years.map((y,i)=>salesData[i]-expData[i]);
+    const investData = years.map(y=>yrTotal(y,['投資'],'life'));
+    const lifeExpData= years.map(y=>yrTotal(y,['毎月固定費','毎月変動費','不定期固定費','不定期変動費'],'life'));
+    const lifeIncData= years.map(y=>yrTotal(y,['収入:予算内','収入:予算外'],'life'));
+    const lifeBalData= years.map((y,i)=>lifeIncData[i]-lifeExpData[i]);
 
-    // 期間内の月別値
-    function salesVal(y,mi){ return rawData.biz.filter(r=>Number(r.year)===Number(y)&&monthIdx(r.month)===mi&&r.category==='売上').reduce((s,r)=>s+r.amount,0)||0; }
-    function expVal(y,mi){ return rawData.biz.filter(r=>Number(r.year)===Number(y)&&monthIdx(r.month)===mi&&['固定費','変動費','その他経費','事業経費'].includes(r.category)).reduce((s,r)=>s+r.amount,0)||0; }
-    function profitVal(y,mi){ return salesVal(y,mi)-expVal(y,mi); }
-    function lifeIncVal(y,mi){ return rawData.life.filter(r=>Number(r.year)===Number(y)&&monthIdx(r.month)===mi&&['収入:予算内','収入:予算外'].includes(r.category)).reduce((s,r)=>s+r.amount,0)||0; }
-    function lifeExpVal(y,mi){ return rawData.life.filter(r=>Number(r.year)===Number(y)&&monthIdx(r.month)===mi&&['毎月固定費','毎月変動費','不定期固定費','不定期変動費'].includes(r.category)).reduce((s,r)=>s+r.amount,0)||0; }
-    function lifeBalVal(y,mi){ return lifeIncVal(y,mi)-lifeExpVal(y,mi); }
-    function investVal(y,mi){ return rawData.life.filter(r=>Number(r.year)===Number(y)&&monthIdx(r.month)===mi&&r.category==='投資').reduce((s,r)=>s+r.amount,0)||0; }
-
-    // 期間合計
-    function periodTotal(y, fn){ return periodMis.reduce((s,mi)=>s+fn(y,mi),0); }
-
-    // 月別棒グラフ用datasets（期間内の月ごとに年度を並べる）
-    function monthBarDatasets(fn) {
-      return years.map((y,i) => ({
-        label: y+'年',
-        data: periodMis.map(mi => fn(y,mi)),
-        backgroundColor: palette[i%palette.length]+'CC',
-        borderColor: palette[i%palette.length],
+    function singleBar(label, data, colorIdx) {
+      return [{
+        label,
+        data,
+        backgroundColor: years.map((_,i)=>palette[i%palette.length]+'CC'),
+        borderColor: years.map((_,i)=>palette[i%palette.length]),
         borderWidth:1,
-      }));
+      }];
     }
 
-    // 期間合計棒グラフ用datasets
-    const summaryLabels = ['売上','事業経費','営業利益','投資','生活収支'];
-    const summaryDatasets = years.map((y,i) => ({
-      label: y+'年',
-      data: [
-        periodTotal(y,salesVal),
-        periodTotal(y,expVal),
-        periodTotal(y,profitVal),
-        periodTotal(y,investVal),
-        periodTotal(y,lifeBalVal),
-      ],
-      backgroundColor: palette[i%palette.length]+'CC',
-      borderColor: palette[i%palette.length],
-      borderWidth:1,
-    }));
-
-    const barOpts = (title) => ({
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{ position:'top', labels:{color:cc.tick, font:{size:11}} },
-        tooltip:{ callbacks:{ label: ctx=>`${ctx.dataset.label}: ${fmt(ctx.raw)}` } },
-        title:{ display:true, text:title, color:cc.tick, font:{size:12,weight:'bold'} },
-      },
-      scales:{
-        x:{ ticks:{font:{size:10},color:cc.tick}, grid:{display:false} },
-        y:{ ticks:{callback:v=>fmtMan(v),font:{size:10},color:cc.tick}, grid:{color:cc.grid} }
-      }
-    });
+    function barOpts(title) {
+      return {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{ callbacks:{ label:ctx=>`${fmt(ctx.raw)}` } },
+          title:{ display:true, text:title, color:cc.tick, font:{size:12,weight:'bold'} },
+          datalabels: false,
+        },
+        scales:{
+          x:{ ticks:{color:cc.tick,font:{size:12}}, grid:{display:false} },
+          y:{ ticks:{callback:v=>fmtMan(v),color:cc.tick}, grid:{color:cc.grid} }
+        }
+      };
+    }
 
     document.getElementById('mainContent').innerHTML = `
-      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 mb-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-sm font-medium">集計期間</span>
-          ${monthSelect2('periodFrom',pFrom2)}<span class="text-xs text-gray-500">〜</span>${monthSelect2('periodTo',pTo2)}
-        </div>
-      </div>
-      <div class="grid grid-cols-1 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div class="relative h-64"><canvas id="chartSales"></canvas></div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <div class="relative h-56"><canvas id="chartProfit"></canvas></div>
-          </div>
-          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <div class="relative h-56"><canvas id="chartInvest"></canvas></div>
-          </div>
+          <div class="relative h-56"><canvas id="cSales"></canvas></div>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div class="relative h-56"><canvas id="chartLifeBal"></canvas></div>
+          <div class="relative h-56"><canvas id="cExp"></canvas></div>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div class="relative h-64"><canvas id="chartSummary"></canvas></div>
+          <div class="relative h-56"><canvas id="cProfit"></canvas></div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div class="relative h-56"><canvas id="cInvest"></canvas></div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div class="relative h-56"><canvas id="cLifeExp"></canvas></div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div class="relative h-56"><canvas id="cLifeBal"></canvas></div>
         </div>
       </div>`;
 
-    makeChart('chartSales',   { type:'bar', data:{ labels:periodLabels, datasets:monthBarDatasets(salesVal) },   options:barOpts('月別売上 年度比較') });
-    makeChart('chartProfit',  { type:'bar', data:{ labels:periodLabels, datasets:monthBarDatasets(profitVal) },  options:barOpts('月別営業利益 年度比較') });
-    makeChart('chartInvest',  { type:'bar', data:{ labels:periodLabels, datasets:monthBarDatasets(investVal) },  options:barOpts('月別投資額 年度比較') });
-    makeChart('chartLifeBal', { type:'bar', data:{ labels:periodLabels, datasets:monthBarDatasets(lifeBalVal) }, options:barOpts('月別生活収支 年度比較') });
-    makeChart('chartSummary', {
-      type:'bar',
-      data:{ labels:summaryLabels, datasets:summaryDatasets },
-      options:{ responsive:true, maintainAspectRatio:false,
-        plugins:{
-          legend:{ position:'top', labels:{color:cc.tick,font:{size:11}} },
-          tooltip:{ callbacks:{ label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.raw)}` } },
-          title:{ display:true, text:'期間合計サマリー 年度比較', color:cc.tick, font:{size:12,weight:'bold'} },
-        },
-        scales:{
-          x:{ ticks:{color:cc.tick}, grid:{display:false} },
-          y:{ ticks:{callback:v=>fmtMan(v),color:cc.tick}, grid:{color:cc.grid} }
-        }
-      }
-    });
+    makeChart('cSales',   {type:'bar', data:{labels:yLabels, datasets:singleBar('売上',salesData)},     options:barOpts('年間売上')});
+    makeChart('cExp',     {type:'bar', data:{labels:yLabels, datasets:singleBar('事業経費',expData)},   options:barOpts('年間事業経費')});
+    makeChart('cProfit',  {type:'bar', data:{labels:yLabels, datasets:singleBar('営業利益',profitData)},options:barOpts('年間営業利益')});
+    makeChart('cInvest',  {type:'bar', data:{labels:yLabels, datasets:singleBar('投資',investData)},    options:barOpts('年間投資額')});
+    makeChart('cLifeExp', {type:'bar', data:{labels:yLabels, datasets:singleBar('生活支出',lifeExpData)},options:barOpts('年間生活支出')});
+    makeChart('cLifeBal', {type:'bar', data:{labels:yLabels, datasets:singleBar('生活収支',lifeBalData)},options:barOpts('年間生活収支')});
     return;
   }
 
