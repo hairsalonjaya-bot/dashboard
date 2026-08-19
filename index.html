@@ -1263,7 +1263,7 @@ function renderYearly() {
   // === グラフタブ ===
   if (state.tab === 'chart') {
     document.getElementById('kpiCards').innerHTML = '';
-    const cc = colorConfig();
+    const cc = chartColors();
     const palette = YEAR_PALETTE;
 
     // 年度ごとに月別データを集計
