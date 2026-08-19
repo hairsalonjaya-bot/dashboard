@@ -1266,10 +1266,18 @@ function renderYearly() {
     const cc = chartColors();
     const palette = YEAR_PALETTE;
 
-    // 年間合計（全月）
-    function yrTotal(y, cats, sheet) {
-      return rawData[sheet].filter(r=>Number(r.year)===Number(y)&&cats.includes(r.category)).reduce((s,r)=>s+r.amount,0);
+    const pFrom2 = state.periodFrom, pTo2 = state.periodTo;
+    const periodMis = Array.from({length: pTo2-pFrom2+1}, (_,i)=>pFrom2+i);
+
+    function monthSelect2(id, val) {
+      return `<select id="${id}" onchange="state.${id}=Number(this.value);renderYearly()" class="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs px-2 py-1">${MONTHS.map((ml,i)=>`<option value="${i}" ${i===val?'selected':''}>${ml}</option>`).join('')}</select>`;
     }
+
+    // 期間内合計
+    function yrTotal(y, cats, sheet) {
+      return rawData[sheet].filter(r=>Number(r.year)===Number(y)&&cats.includes(r.category)&&periodMis.includes(monthIdx(r.month))).reduce((s,r)=>s+r.amount,0);
+    }
+    const periodLabel = `${MONTHS[pFrom2]}〜${MONTHS[pTo2]}`;
     const yLabels = years.map(y=>y+'年');
     const salesData  = years.map(y=>yrTotal(y,['売上'],'biz'));
     const expData    = years.map(y=>yrTotal(y,['固定費','変動費','その他経費','事業経費'],'biz'));
@@ -1306,6 +1314,13 @@ function renderYearly() {
     }
 
     document.getElementById('mainContent').innerHTML = `
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 mb-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-sm font-medium">集計期間</span>
+          ${monthSelect2('periodFrom',pFrom2)}<span class="text-xs text-gray-500">〜</span>${monthSelect2('periodTo',pTo2)}
+          <span class="text-xs text-gray-400 ml-1">（${periodLabel} の年度比較）</span>
+        </div>
+      </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div class="relative h-56"><canvas id="cSales"></canvas></div>
