@@ -423,7 +423,7 @@ function bizAverageHTML() {
 
 // ======== LIFE ========
 function renderLife(m) {
-  renderTabBar([{id:'overview',label:'概要'},{id:'annual',label:'年間総合'},{id:'average',label:'月平均'},{id:'invest_all',label:'月別投資'}]);
+  renderTabBar([{id:'overview',label:'概要'},{id:'annual',label:'年間総合'},{id:'average',label:'月平均'},{id:'invest_all',label:'月別貯蓄'}]);
   const inc=lifeIncome(m),exp=lifeExpense(m),bal=inc-exp;
   const pm=(m-1+12)%12,pi=lifeIncome(pm),pe=lifeExpense(pm),pb=pi-pe;
   document.getElementById('kpiCards').innerHTML =
@@ -506,7 +506,7 @@ function lifeOverviewHTML(m) {
     <div class="grid grid-cols-3 gap-4 text-center">
       <div><div class="text-xs text-gray-500">収入</div><div class="text-lg font-bold tabular">${fmt(inc)}</div><div class="text-xs text-gray-500">100%</div></div>
       <div><div class="text-xs text-gray-500">支出</div><div class="text-lg font-bold tabular ${target80?'text-emerald-600':'text-red-500'}">${fmt(exp)}</div><div class="text-xs ${target80?'text-emerald-600':'text-red-500'} font-medium">${expRate.toFixed(1)}%</div></div>
-      <div><div class="text-xs text-gray-500">投資・貯金</div><div class="text-lg font-bold tabular">${fmt(lifeInvest(m))}</div><div class="text-xs text-gray-500">${inc>0?((lifeInvest(m)/inc)*100).toFixed(1):'0.0'}%</div></div>
+      <div><div class="text-xs text-gray-500">貯蓄</div><div class="text-lg font-bold tabular">${fmt(lifeInvest(m))}</div><div class="text-xs text-gray-500">${inc>0?((lifeInvest(m)/inc)*100).toFixed(1):'0.0'}%</div></div>
     </div>
     <div class="mt-3 h-3 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden flex">
       <div class="h-full ${target80?'bg-emerald-500':'bg-red-500'} transition-all" style="width:${Math.min(expRate,100)}%"></div>
@@ -525,7 +525,7 @@ function lifeOverviewHTML(m) {
       <table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">項目</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">当月</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">年間累計</th></tr></thead><tbody>${incRows}</tbody></table>
     </div>
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div class="flex items-center justify-between p-4 pb-2"><div class="text-sm font-medium">投資・貯金の部（${MONTHS[m]}）</div><div class="text-right"><span class="text-xs text-gray-500 mr-2">投資 年間累計:</span><span class="text-lg font-bold tabular text-emerald-600">${fmt(invAnnual)}</span></div></div>
+      <div class="flex items-center justify-between p-4 pb-2"><div class="text-sm font-medium">貯蓄の部（${MONTHS[m]}）</div><div class="text-right"><span class="text-xs text-gray-500 mr-2">貯蓄 年間累計:</span><span class="text-lg font-bold tabular text-emerald-600">${fmt(invAnnual)}</span></div></div>
       <table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">項目</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">当月</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">年間累計</th></tr></thead><tbody>${invRows}</tbody></table>
     </div>
   </div>`;
@@ -550,7 +550,7 @@ function lifeAnnualHTML() {
   let mr='';MONTHS.forEach((ml,i)=>{const inc=lifeIncome(i),exp=lifeExpense(i),bal=inc-exp;mr+=`<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 ${i===state.month?'bg-blue-50 dark:bg-blue-900/20':''}"><td class="py-2 px-3 text-sm font-medium">${ml}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(inc)}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(exp)}</td><td class="py-2 px-3 text-right text-sm tabular ${bal>=0?'text-emerald-600':'text-red-500'}">${fmt(bal)}</td></tr>`;});
   mr+=`<tr class="bg-gray-50 dark:bg-gray-700/50 border-t-2 border-gray-300 dark:border-gray-600 font-bold"><td class="py-2 px-3 text-sm">年間合計</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(aI)}</td><td class="py-2 px-3 text-right text-sm tabular">${fmt(aE)}</td><td class="py-2 px-3 text-right text-sm tabular ${aB>=0?'text-emerald-600':'text-red-500'}">${fmt(aB)}</td></tr>`;
   return `<div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">${kpiCard('年間収入',fmt(aI),'')}${kpiCard('年間支出',fmt(aE),'')}${kpiCard('年間収支',fmt(aB),'',aB>=0?'text-emerald-600':'text-red-500')}</div>
-  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6"><div class="flex items-center justify-between"><div class="text-sm font-medium">投資 年間累計</div><div class="text-2xl font-bold tabular text-emerald-600">${fmt(aInvOnly)}</div></div></div>
+  <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6"><div class="flex items-center justify-between"><div class="text-sm font-medium">貯蓄 年間累計</div><div class="text-2xl font-bold tabular text-emerald-600">${fmt(aInvOnly)}</div></div></div>
   <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto"><div class="text-sm font-medium p-4 pb-2">月次収支一覧</div><table class="w-full"><thead><tr class="bg-gray-50 dark:bg-gray-700/50"><th class="py-2 px-3 text-left text-xs font-medium text-gray-500">月</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">収入</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">支出</th><th class="py-2 px-3 text-right text-xs font-medium text-gray-500">収支</th></tr></thead><tbody>${mr}</tbody></table></div>`;
 }
 
@@ -599,12 +599,12 @@ function lifeInvestAllHTML() {
 
   return `<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
     <div class="flex items-center justify-between p-4 pb-2">
-      <div class="text-sm font-medium">投資・貯金 月別一覧（${state.year}年）</div>
-      <div class="text-sm">投資 年間累計: <span class="font-bold tabular text-emerald-600">${fmt(sum12(i=>lifeInvCatTotal(i,'invest')))}</span></div>
+      <div class="text-sm font-medium">貯蓄 月別一覧（${state.year}年）</div>
+      <div class="text-sm">貯蓄 年間累計: <span class="font-bold tabular text-emerald-600">${fmt(sum12(i=>lifeInvCatTotal(i,'invest')))}</span></div>
     </div>
     <table class="w-full text-sm border-collapse">
       <thead><tr class="bg-gray-50 dark:bg-gray-700/50">${header}</tr></thead>
-      <tbody>${rows||'<tr><td colspan="14" class="py-8 text-center text-gray-400 text-sm">投資・貯金データがありません</td></tr>'}</tbody>
+      <tbody>${rows||'<tr><td colspan="14" class="py-8 text-center text-gray-400 text-sm">貯蓄データがありません</td></tr>'}</tbody>
     </table>
   </div>`;
 }
@@ -746,7 +746,7 @@ function renderYearly() {
     {id:'sales',    label:'売上'},
     {id:'expense',  label:'事業経費'},
     {id:'profit',   label:'利益'},
-    {id:'invest',   label:'投資'},
+    {id:'invest',   label:'貯蓄'},
     {id:'life_exp', label:'生活支出'},
     {id:'life_bal', label:'生活収支'},
     {id:'summary',  label:'📋 総評'},
@@ -827,7 +827,7 @@ function renderYearly() {
       {label:'売上高',lv:lSales,pv:pSales,p:salesPct,inv:false},
       {label:'事業経費',lv:lExp,pv:pExp,p:expPct,inv:true},
       {label:'営業利益',lv:lProfit,pv:pProfit,p:profitPct,inv:false},
-      {label:'投資',lv:lInvest,pv:pInvest,p:investPct,inv:false},
+      {label:'貯蓄',lv:lInvest,pv:pInvest,p:investPct,inv:false},
       {label:'生活支出',lv:lLifeExp,pv:pLifeExp,p:lifeExpPct,inv:true},
     ];
     const metricCards=metrics.map(m=>{
@@ -995,7 +995,7 @@ function renderYearly() {
       const fLifeInc  = seasonalProj(lyIncM,   pyIncM);
       const fLifeExp  = seasonalProj(lyLExpM,  pyLExpM);
       const fLifeBal  = fLifeInc - fLifeExp;
-      // 投資は季節性を使わず集計期間の月平均でフラット外挿
+      // 貯蓄は季節性を使わず集計期間の月平均でフラット外挿
       const curInvRaw = mapSum(lyInvM);
       const fInvest   = m>0 ? Math.round(curInvRaw + (curInvRaw/m)*remaining) : 0;
       const fTotal    = fProfit + fLifeBal;
@@ -1022,7 +1022,7 @@ function renderYearly() {
           { label:'生活収入', cur:curLifeInc, proj:fLifeInc, good:true  },
           { label:'生活支出', cur:curLifeExp, proj:fLifeExp, good:false },
           { label:'生活収支', cur:curLifeBal, proj:fLifeBal, good:true,  bold:true },
-          { label:'投資',     cur:curInvest,  proj:fInvest,  good:true  },
+          { label:'貯蓄',     cur:curInvest,  proj:fInvest,  good:true  },
           { label:'総合収支', cur:curTotal,   proj:fTotal,   good:true,  bold:true, sep:true },
         ]
       };
@@ -1116,7 +1116,7 @@ function renderYearly() {
     if(upItems.length>0) actions.push(`<li class="flex gap-2 text-sm"><span class="text-orange-500 font-bold mt-0.5">!</span><span><strong>${upItems[0].item}の削減：</strong>前年比+${upItems[0].pct.toFixed(1)}%（${fmt(upItems[0].diff)}増）。前年水準に戻せれば利益が${fmt(upItems[0].diff)}改善します。</span></li>`);
     if(wasteItems.length>0) actions.push(`<li class="flex gap-2 text-sm"><span class="text-amber-500 font-bold mt-0.5">!</span><span><strong>要確認の経費：</strong>${wasteItems[0].item}が+${wasteItems[0].pct.toFixed(0)}%と急増。契約内容・利用頻度を確認してください。</span></li>`);
     if(lLifeExp>lProfit*0.8) actions.push(`<li class="flex gap-2 text-sm"><span class="text-blue-500 font-bold mt-0.5">!</span><span><strong>生活費の最適化：</strong>生活支出（${fmt(lLifeExp)}）が事業利益に対して高い割合です。固定費の見直しで手元資金を増やせます。</span></li>`);
-    if(lProfit>0&&lInvest<lProfit*0.1) actions.push(`<li class="flex gap-2 text-sm"><span class="text-emerald-500 font-bold mt-0.5">✓</span><span><strong>投資の増額検討：</strong>利益（${fmt(lProfit)}）に対し投資額（${fmt(lInvest)}）が少なめです。余剰資金の積立・投資を増やすチャンスです。</span></li>`);
+    if(lProfit>0&&lInvest<lProfit*0.1) actions.push(`<li class="flex gap-2 text-sm"><span class="text-emerald-500 font-bold mt-0.5">✓</span><span><strong>貯蓄の増額検討：</strong>利益（${fmt(lProfit)}）に対し貯蓄額（${fmt(lInvest)}）が少なめです。余剰資金の積立・貯蓄を増やすチャンスです。</span></li>`);
     if(actions.length===0) actions.push(`<li class="flex gap-2 text-sm"><span class="text-emerald-500 font-bold mt-0.5">✓</span><span>現状の収支バランスは良好です。引き続き売上の安定化と経費の適正管理を続けましょう。</span></li>`);
 
     function monthSelect2(id, val) {
@@ -1438,14 +1438,14 @@ function renderYearly() {
     makeChart('cSales',   {type:'bar', data:{labels:yLabels, datasets:singleBar('売上',salesData)},     options:barOpts('年間売上')});
     makeChart('cExp',     {type:'bar', data:{labels:yLabels, datasets:singleBar('事業経費',expData)},   options:barOpts('年間事業経費')});
     makeChart('cProfit',  {type:'bar', data:{labels:yLabels, datasets:singleBar('営業利益',profitData)},options:barOpts('年間営業利益')});
-    makeChart('cInvest',  {type:'bar', data:{labels:yLabels, datasets:singleBar('投資',investData)},    options:barOpts('年間投資額')});
+    makeChart('cInvest',  {type:'bar', data:{labels:yLabels, datasets:singleBar('貯蓄',investData)},    options:barOpts('年間貯蓄額')});
     makeChart('cLifeExp', {type:'bar', data:{labels:yLabels, datasets:singleBar('生活支出',lifeExpData)},options:barOpts('年間生活支出')});
     makeChart('cLifeBal', {type:'bar', data:{labels:yLabels, datasets:singleBar('生活収支',lifeBalData)},options:barOpts('年間生活収支')});
     return;
   }
 
   const metric = state.tab;
-  const metricLabel = {sales:'売上高', expense:'事業経費合計', profit:'営業利益', invest:'投資', life_exp:'生活支出', life_bal:'生活収支'}[metric];
+  const metricLabel = {sales:'売上高', expense:'事業経費合計', profit:'営業利益', invest:'貯蓄', life_exp:'生活支出', life_bal:'生活収支'}[metric];
   const isInvert = metric === 'expense' || metric === 'life_exp';
   const isProfit = metric === 'profit' || metric === 'life_bal';
 
