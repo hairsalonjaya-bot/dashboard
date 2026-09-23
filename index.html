@@ -816,9 +816,11 @@ function renderYearly() {
       if(p!==null)itemChanges.push({item:k,lv,pv,pct:p,diff:lv-pv});
     });
     // 増加した経費（削減余地あり）を優先してランキング
-    const upItems=itemChanges.filter(x=>x.pct>0).sort((a,b)=>b.diff-a.diff);
-    const downItems=itemChanges.filter(x=>x.pct<0).sort((a,b)=>a.diff-b.diff);
-    const allRanked=[...itemChanges].sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
+    // 特別費（預金・積立）は削減対象ではないため、改善/好転ランキングから除外
+    const rankable=itemChanges.filter(x=>String(x.item).indexOf('特別費')===-1);
+    const upItems=rankable.filter(x=>x.pct>0).sort((a,b)=>b.diff-a.diff);
+    const downItems=rankable.filter(x=>x.pct<0).sort((a,b)=>a.diff-b.diff);
+    const allRanked=[...rankable].sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
 
     // 変動サマリーカード
     const salesPct=yPct(lSales,pSales), expPct=yPct(lExp,pExp), profitPct=yPct(lProfit,pProfit), investPct=yPct(lInvest,pInvest), lifeExpPct=yPct(lLifeExp,pLifeExp), totalBalPct=yPct(lTotalBal,pTotalBal);
@@ -1060,7 +1062,7 @@ function renderYearly() {
 
     // ③ 無駄経費の疑い（前年比+30%超 かつ 増加額が一定以上）
     const wasteThreshold = Math.max(10000, lSales*0.005); // 売上の0.5%か1万円の大きい方
-    const wasteItems = itemChanges.filter(x=>x.pct>30&&x.diff>wasteThreshold).sort((a,b)=>b.pct-a.pct);
+    const wasteItems = rankable.filter(x=>x.pct>30&&x.diff>wasteThreshold).sort((a,b)=>b.pct-a.pct);
     const wasteRows = wasteItems.slice(0,5).map(x=>{
       const reason = x.pct>100
         ? '倍増以上の急増。単発コスト・重複契約の可能性あり'
