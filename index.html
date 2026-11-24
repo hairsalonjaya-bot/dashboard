@@ -561,6 +561,11 @@ function lifeInvestAllHTML() {
   let header = `<th class="py-2 px-3 text-left text-xs font-medium text-gray-500 sticky left-0 bg-white dark:bg-gray-800 z-10 min-w-[140px]">項目</th>`;
   MONTHS.forEach(ml => { header += `<th class="${thStyle}">${ml}</th>`; });
   header += `<th class="${thStyle} text-gray-700 dark:text-gray-300">年間計</th>`;
+  header += `<th class="${thStyle} text-gray-700 dark:text-gray-300">月平均</th>`;
+
+  // 月平均＝年間計 ÷ 貯蓄データのある月数（進行中の年は入力済みの月数で平均）
+  const invMonths = MONTHS.filter((_,i)=>lifeInvest(i)>0).length || 1;
+  const avgTd = (v, cls='font-medium') => `<td class="${tdBase} ${cls}">${fmt(v/invMonths)}</td>`;
 
   let rows = '';
   ['投資','貯金'].forEach(catLabel => {
@@ -570,7 +575,7 @@ function lifeInvestAllHTML() {
     for(let i=0;i<12;i++) { Object.keys(itemsForCat(rawData.life,i,catLabel)).forEach(it=>seen.add(it)); }
     if(seen.size === 0) return;
 
-    rows += `<tr class="bg-gray-100 dark:bg-gray-700/60"><td colspan="14" class="py-1 px-3 text-xs font-bold" style="color:${col}">${catLabel}</td></tr>`;
+    rows += `<tr class="bg-gray-100 dark:bg-gray-700/60"><td colspan="15" class="py-1 px-3 text-xs font-bold" style="color:${col}">${catLabel}</td></tr>`;
 
     seen.forEach(item => {
       const vals = MONTHS.map((_,i) => (itemsForCat(rawData.life,i,catLabel)[item])||0);
@@ -579,7 +584,7 @@ function lifeInvestAllHTML() {
       rows += `<tr class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/20">
         <td class="py-1.5 px-3 text-xs sticky left-0 bg-white dark:bg-gray-800 z-10"><span class="inline-block w-2 h-2 rounded-sm mr-1.5" style="background:${col}"></span>${item}</td>
         ${vals.map(v=>`<td class="${tdBase} text-gray-600 dark:text-gray-400">${v>0?fmt(v):'—'}</td>`).join('')}
-        <td class="${tdBase} font-medium">${fmt(ann)}</td></tr>`;
+        <td class="${tdBase} font-medium">${fmt(ann)}</td>${avgTd(ann,'text-gray-600 dark:text-gray-400')}</tr>`;
     });
 
     const catVals = MONTHS.map((_,i) => lifeInvCatTotal(i,ck));
@@ -587,7 +592,7 @@ function lifeInvestAllHTML() {
     rows += `<tr class="bg-gray-50 dark:bg-gray-700/40 font-medium border-t border-gray-200 dark:border-gray-600">
       <td class="py-1.5 px-3 text-xs sticky left-0 bg-gray-50 dark:bg-gray-700/40 z-10">${catLabel} 小計</td>
       ${catVals.map(v=>`<td class="${tdBase} font-medium">${v>0?fmt(v):'—'}</td>`).join('')}
-      <td class="${tdBase} font-bold">${fmt(catAnn)}</td></tr>`;
+      <td class="${tdBase} font-bold">${fmt(catAnn)}</td>${avgTd(catAnn,'font-bold')}</tr>`;
   });
 
   const totals = MONTHS.map((_,i)=>lifeInvest(i));
@@ -595,17 +600,19 @@ function lifeInvestAllHTML() {
   rows += `<tr class="bg-gray-100 dark:bg-gray-600/50 border-t-2 border-gray-300 dark:border-gray-500 font-bold">
     <td class="py-2 px-3 text-xs sticky left-0 bg-gray-100 dark:bg-gray-600/50 z-10">合計</td>
     ${totals.map(v=>`<td class="${tdBase} font-bold">${v>0?fmt(v):'—'}</td>`).join('')}
-    <td class="${tdBase} font-bold text-emerald-600">${fmt(grandTotal)}</td></tr>`;
+    <td class="${tdBase} font-bold text-emerald-600">${fmt(grandTotal)}</td>${avgTd(grandTotal,'font-bold text-emerald-600')}</tr>`;
 
+  const invAnnHead = sum12(i=>lifeInvCatTotal(i,'invest'));
   return `<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
     <div class="flex items-center justify-between p-4 pb-2">
       <div class="text-sm font-medium">貯蓄 月別一覧（${state.year}年）</div>
-      <div class="text-sm">貯蓄 年間累計: <span class="font-bold tabular text-emerald-600">${fmt(sum12(i=>lifeInvCatTotal(i,'invest')))}</span></div>
+      <div class="text-sm text-right">貯蓄 年間累計: <span class="font-bold tabular text-emerald-600">${fmt(invAnnHead)}</span><span class="text-xs text-gray-500 ml-2">（月平均 ${fmt(invAnnHead/invMonths)}）</span></div>
     </div>
     <table class="w-full text-sm border-collapse">
       <thead><tr class="bg-gray-50 dark:bg-gray-700/50">${header}</tr></thead>
-      <tbody>${rows||'<tr><td colspan="14" class="py-8 text-center text-gray-400 text-sm">貯蓄データがありません</td></tr>'}</tbody>
+      <tbody>${rows||'<tr><td colspan="15" class="py-8 text-center text-gray-400 text-sm">貯蓄データがありません</td></tr>'}</tbody>
     </table>
+    ${rows?`<div class="px-4 py-2 text-[10px] text-gray-400">※ 月平均＝年間計 ÷ 貯蓄データのある月数（${invMonths}ヶ月）</div>`:''}
   </div>`;
 }
 
