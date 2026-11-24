@@ -1035,13 +1035,29 @@ function renderYearly() {
     const totalUp   = upItems.reduce((s,x)=>s+x.diff,0);
     const totalDown = downItems.reduce((s,x)=>s+x.diff,0); // 負の値
     const netChange = totalUp + totalDown; // 正=経費増、負=経費削減
+    // 月平均：集計期間内でその年にデータがある月数で割る（進行中の年は経過月数で平均）
+    function dataMonths(y){
+      if(!y) return pMs.length;
+      const yr=Number(y), set=new Set();
+      rawData.biz.forEach(r=>{ if(Number(r.year)===yr){ const mi=monthIdx(r.month); if(pMs.includes(mi)) set.add(mi); } });
+      return set.size || pMs.length;
+    }
+    const lMonths = dataMonths(ly2), pMonths = dataMonths(py2);
+    const avgL = v => v / lMonths, avgP = v => v / pMonths;
+    const avgSub = (v, cls='text-gray-400', signed=false) => `<div class="text-[10px] ${cls} font-normal">月平均 ${signed&&v>0?'+':''}${fmt(v)}</div>`;
+    const sumPv = itemChanges.reduce((s,x)=>s+x.pv,0), sumLv = itemChanges.reduce((s,x)=>s+x.lv,0);
+    // 増加・削減・ネットの月平均（各年の月平均の差）
+    const avgUp   = upItems.reduce((s,x)=>s+avgL(x.lv)-avgP(x.pv),0);
+    const avgDown = downItems.reduce((s,x)=>s+avgL(x.lv)-avgP(x.pv),0);
+    const avgNet  = avgL(sumLv) - avgP(sumPv);
     const balanceRows = [...itemChanges].sort((a,b)=>b.diff-a.diff).map(x=>{
       const isUp = x.diff > 0;
+      const ad = avgL(x.lv) - avgP(x.pv);
       return `<tr class="border-t border-gray-100 dark:border-gray-700">
         <td class="py-1.5 px-3 text-xs">${x.item}</td>
-        <td class="py-1.5 px-3 text-right text-xs tabular text-gray-400">${fmt(x.pv)}</td>
-        <td class="py-1.5 px-3 text-right text-xs tabular">${fmt(x.lv)}</td>
-        <td class="py-1.5 px-3 text-right text-xs tabular font-bold ${isUp?'text-red-500':'text-emerald-600'}">${isUp?'+':''}${fmt(x.diff)}</td>
+        <td class="py-1.5 px-3 text-right text-xs tabular text-gray-400">${fmt(x.pv)}${avgSub(avgP(x.pv))}</td>
+        <td class="py-1.5 px-3 text-right text-xs tabular">${fmt(x.lv)}${avgSub(avgL(x.lv))}</td>
+        <td class="py-1.5 px-3 text-right text-xs tabular font-bold ${isUp?'text-red-500':'text-emerald-600'}">${isUp?'+':''}${fmt(x.diff)}${avgSub(ad, isUp?'text-red-400':'text-emerald-500', true)}</td>
         <td class="py-1.5 px-3 text-right text-xs ${isUp?'text-red-400':'text-emerald-500'}">${isUp?'+':''}${x.pct.toFixed(1)}%</td>
       </tr>`;
     }).join('');
@@ -1208,16 +1224,19 @@ function renderYearly() {
               <div class="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-center">
                 <div class="text-xs text-red-500 mb-1">増加した経費 合計</div>
                 <div class="text-base font-bold text-red-600">+${fmt(totalUp)}</div>
+                <div class="text-xs text-red-400">月平均 ${avgUp>0?'+':''}${fmt(avgUp)}</div>
                 <div class="text-xs text-gray-400">${upItems.length}項目</div>
               </div>
               <div class="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-3 text-center">
                 <div class="text-xs text-emerald-600 mb-1">削減できた経費 合計</div>
                 <div class="text-base font-bold text-emerald-600">${fmt(totalDown)}</div>
+                <div class="text-xs text-emerald-500">月平均 ${avgDown>0?'+':''}${fmt(avgDown)}</div>
                 <div class="text-xs text-gray-400">${downItems.length}項目</div>
               </div>
               <div class="rounded-lg ${netChange<=0?'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800':'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'} border p-3 text-center">
                 <div class="text-xs ${netChange<=0?'text-emerald-600':'text-red-500'} mb-1">差引 ネット</div>
                 <div class="text-base font-bold ${netChange<=0?'text-emerald-600':'text-red-500'}">${netChange>0?'+':''}${fmt(netChange)}</div>
+                <div class="text-xs ${avgNet<=0?'text-emerald-500':'text-red-400'}">月平均 ${avgNet>0?'+':''}${fmt(avgNet)}</div>
                 <div class="text-xs text-gray-400">${netChange<=0?'経費削減✅':'経費増加⚠️'}</div>
               </div>
             </div>
@@ -1233,10 +1252,12 @@ function renderYearly() {
                 <tbody>${balanceRows}</tbody>
                 <tfoot><tr class="border-t-2 border-gray-300 dark:border-gray-500 bg-gray-50 dark:bg-gray-700/50">
                   <td class="py-2 px-3 text-xs font-bold">合計</td>
-                  <td class="py-2 px-3 text-right text-xs tabular font-bold">${fmt(itemChanges.reduce((s,x)=>s+x.pv,0))}</td>
-                  <td class="py-2 px-3 text-right text-xs tabular font-bold">${fmt(itemChanges.reduce((s,x)=>s+x.lv,0))}</td>
-                  <td class="py-2 px-3 text-right text-xs tabular font-bold ${netChange<=0?'text-emerald-600':'text-red-500'}">${netChange>0?'+':''}${fmt(netChange)}</td>
+                  <td class="py-2 px-3 text-right text-xs tabular font-bold">${fmt(sumPv)}${avgSub(avgP(sumPv),'text-gray-500')}</td>
+                  <td class="py-2 px-3 text-right text-xs tabular font-bold">${fmt(sumLv)}${avgSub(avgL(sumLv),'text-gray-500')}</td>
+                  <td class="py-2 px-3 text-right text-xs tabular font-bold ${netChange<=0?'text-emerald-600':'text-red-500'}">${netChange>0?'+':''}${fmt(netChange)}${avgSub(avgNet, avgNet<=0?'text-emerald-500':'text-red-400', true)}</td>
                   <td></td>
+                </tr>
+                <tr><td colspan="5" class="py-1.5 px-3 text-[10px] text-gray-400">※ 月平均＝期間合計 ÷ データのある月数（${py2}年: ${pMonths}ヶ月 / ${ly2}年: ${lMonths}ヶ月）</td>
                 </tr></tfoot>
               </table>
             </div>
